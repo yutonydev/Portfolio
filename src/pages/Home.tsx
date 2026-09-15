@@ -1,9 +1,9 @@
+import { lazy, Suspense, useEffect, useState, useSyncExternalStore } from 'react';
 import { Link } from 'react-router-dom';
 import ScrollReveal from '../components/ScrollReveal';
 import TiltCard from '../components/TiltCard';
 import RoleCycler from '../components/RoleCycler';
 import GradientHeading from '../components/GradientHeading';
-import Lanyard from '../components/Lanyard/Lanyard';
 import SpotlightCard from '../components/SpotlightCard/SpotlightCard';
 import cardFront from '../components/Lanyard/card-front.jpg';
 import cardBack from '../components/Lanyard/card-back.png';
@@ -11,23 +11,66 @@ import strapTy from '../components/Lanyard/strap-ty.png';
 import TagPill from '../components/TagPill';
 import { HERO, FEATURED_PROJECTS } from '../lib/content';
 
+const loadLanyard = () => import('../components/Lanyard/Lanyard');
+const Lanyard = lazy(loadLanyard);
+
+const LG = '(min-width: 64rem)';
+const subscribeLg = (onChange: () => void) => {
+  const mql = window.matchMedia(LG);
+  mql.addEventListener('change', onChange);
+  return () => mql.removeEventListener('change', onChange);
+};
+const isLg = () => window.matchMedia(LG).matches;
+
+// Fetch the lanyard early, but only on Home: App imports every page up front.
+if (typeof window !== 'undefined' && window.location.pathname === '/' && isLg()) {
+  void loadLanyard();
+}
+
+/** True after the first painted frame, once the main thread is idle. */
+function useAfterFirstPaint() {
+  const [ready, setReady] = useState(false);
+
+  useEffect(() => {
+    let idle = 0;
+    const raf = requestAnimationFrame(() => {
+      const go = () => setReady(true);
+      idle = typeof requestIdleCallback === 'function' ? requestIdleCallback(go, { timeout: 500 }) : window.setTimeout(go, 1);
+    });
+    return () => {
+      cancelAnimationFrame(raf);
+      if (typeof cancelIdleCallback === 'function') cancelIdleCallback(idle);
+      else clearTimeout(idle);
+    };
+  }, []);
+
+  return ready;
+}
+
 export default function Home() {
+  const wide = useSyncExternalStore(subscribeLg, isLg, () => false);
+  const afterPaint = useAfterFirstPaint();
+
   return (
     <div className="relative">
       {/* Lanyard: z-30, above the page but below the sticky nav. */}
       <div className="pointer-events-none absolute inset-x-0 top-0 z-30 hidden h-[900px] lg:block">
         <div className="pointer-events-none h-full w-full">
           {/* Fixed card height, rope clears "View all", low gravity slows the drop. */}
-          <Lanyard
-            gravity={[0, -14, 0]}
-            cardHeightPx={255}
-            anchorRightPx={333}
-            ropeSegmentLength={0.77}
-            lanyardImage={strapTy}
-            strapTileLength={0.8}
-            frontImage={cardFront}
-            backImage={cardBack}
-          />
+          {wide && afterPaint && (
+            <Suspense fallback={null}>
+              <Lanyard
+                gravity={[0, -14, 0]}
+                cardHeightPx={255}
+                anchorRightPx={333}
+                ropeSegmentLength={0.77}
+                lanyardImage={strapTy}
+                strapTileLength={0.8}
+                frontImage={cardFront}
+                backImage={cardBack}
+              />
+            </Suspense>
+          )}
         </div>
       </div>
 

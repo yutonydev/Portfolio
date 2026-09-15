@@ -1,6 +1,6 @@
 /* eslint-disable react/no-unknown-property */
 'use client';
-import { useEffect, useMemo, useRef, useState } from 'react';
+import { useEffect, useMemo, useRef, useState, Suspense } from 'react';
 import { Canvas, extend, useFrame, useThree, type ThreeElement, type ThreeEvent } from '@react-three/fiber';
 import { useGLTF, useTexture, Environment, Lightformer } from '@react-three/drei';
 import {
@@ -16,24 +16,15 @@ import {
 import { MeshLineGeometry, MeshLineMaterial } from 'meshline';
 import * as THREE from 'three';
 
-// replace with your own imports, see the usage snippet for details
 import cardGLB from './card.glb';
 import lanyard from './lanyard.png';
 
 extend({ MeshLineGeometry, MeshLineMaterial });
 
-// Warm the model and textures at import time, so arriving at the page that uses
-// them does not wait on a fetch and parse.
+// Start loading the model as soon as this module is imported.
 useGLTF.preload(cardGLB);
 
-/**
- * Composited card textures, kept across mounts.
- *
- * Building one draws the card's whole 1678x1677 atlas plus both face images and
- * uploads the result to the GPU. Leaving that inside the component redoes all
- * of it every time the page is revisited, which is the bulk of the pause on
- * navigating back. Keyed by the inputs, so different art still gets its own.
- */
+/** Composited card textures, cached so revisits skip rebuilding and re-uploading them. */
 const cardMapCache = new Map<string, THREE.CanvasTexture>();
 
 declare module '@react-three/fiber' {
@@ -43,18 +34,12 @@ declare module '@react-three/fiber' {
   }
 }
 
-// 1x1 transparent pixel — lets useTexture be called unconditionally when a
-// front/back image isn't supplied.
+// Placeholder so useTexture can be called unconditionally.
 const BLANK_PIXEL =
   'data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mNk+M9QDwADhgGAWjR9awAAAABJRU5ErkJggg==';
 
-// The card model's front face is UV-mapped to the LEFT half of the texture
-// atlas and the back face to the RIGHT half (measured from card.glb). Each
-// custom image is composited into its own half so the two faces render
-// independently, aspect-preserving (no stretching).
-// 0.7572 is the card mesh's real maximum V, read from card.glb's TEXCOORD_0.
-// The shipped 0.755/0.757 stop just short and leave a thin strip of the
-// original texture along the bottom of each face.
+// Front face maps to the left half of the atlas, back face to the right.
+// 0.7572 is the mesh's real max V; lower values leave a strip of the old texture.
 const FRONT_UV_RECT = { x: 0, y: 0, w: 0.5, h: 0.7572 };
 const BACK_UV_RECT = { x: 0.5, y: 0, w: 0.5, h: 0.7572 };
 
@@ -65,14 +50,8 @@ const CARD_HIT_RADIUS = 1.35;
 const CARD_WORLD_HEIGHT = 2.25;
 
 /**
- * Drives the camera imperatively rather than through <Canvas camera={...}>,
- * which R3F only applies when the camera is first created — changing that prop
- * later silently does nothing, so the card's size would drift with the canvas.
- *
- * cardHeightPx pins the card's on-screen height by solving for the camera
- * distance; anchorRightPx pans sideways so the rig hangs a fixed distance from
- * the canvas's right edge, letting the canvas span the page without the card
- * moving with it.
+ * Sets the camera imperatively, since R3F ignores later changes to <Canvas camera>.
+ * Pins the card's on-screen height and hangs the rig anchorRightPx from the right edge.
  */
 function CameraRig({
   cardHeightPx,
@@ -98,6 +77,67 @@ function CameraRig({
 
     cam.updateProjectionMatrix();
   }, [camera, size.width, size.height, cardHeightPx, anchorRightPx]);
+
+  return null;
+}
+
+/**
+ * Uploads textures and links shaders one per frame before the loop starts, so the
+ * first render doesn't freeze the page. compileAsync was over a second slower.
+ */
+function WarmUp({ onReady }: { onReady: (ready: boolean) => void }) {
+  const { gl, scene, camera } = useThree();
+
+  useEffect(() => {
+    let cancelled = false;
+    let raf = 0;
+    const nextFrame = () =>
+      new Promise<void>(resolve => {
+        raf = requestAnimationFrame(() => resolve());
+      });
+
+    (async () => {
+      await nextFrame();
+
+      const textures = new Set<THREE.Texture>();
+      scene.traverse(object => {
+        const material = (object as THREE.Mesh).material;
+        if (!material) return;
+        for (const m of Array.isArray(material) ? material : [material]) {
+          const map = (m as THREE.MeshBasicMaterial).map;
+          if (map && !(map as THREE.Texture & { isRenderTargetTexture?: boolean }).isRenderTargetTexture) {
+            textures.add(map);
+          }
+        }
+      });
+      for (const texture of textures) {
+        if (cancelled) return;
+        gl.initTexture(texture);
+        await nextFrame();
+      }
+      if (cancelled) return;
+
+      gl.compile(scene, camera);
+      await nextFrame();
+
+      // compile() defers the blocking link check; getUniforms forces it. Uses
+      // three internals, so it's skipped if their shape changes.
+      for (const program of gl.info.programs ?? []) {
+        if (cancelled) return;
+        const { getUniforms } = program as { getUniforms?: () => unknown };
+        if (typeof getUniforms !== 'function') break;
+        getUniforms.call(program);
+        await nextFrame();
+      }
+
+      if (!cancelled) onReady(true);
+    })();
+
+    return () => {
+      cancelled = true;
+      cancelAnimationFrame(raf);
+    };
+  }, [gl, scene, camera, onReady]);
 
   return null;
 }
@@ -144,6 +184,7 @@ export default function Lanyard({
   dropTilt = 16
 }: LanyardProps) {
   const [isMobile, setIsMobile] = useState<boolean>(() => typeof window !== 'undefined' && window.innerWidth < 768);
+  const [warm, setWarm] = useState(false);
 
   useEffect(() => {
     const handleResize = (): void => setIsMobile(window.innerWidth < 768);
@@ -152,72 +193,69 @@ export default function Lanyard({
   }, []);
 
   return (
-    // h-full, not h-screen: this hangs in a corner of the page rather than
-    // owning the viewport.
     <div className="relative h-full w-full flex justify-center items-center transform scale-100 origin-center">
       <Canvas
         camera={{ position, fov }}
+        // Held until WarmUp finishes; physics runs in the loop, so the drop waits too.
+        frameloop={warm ? 'always' : 'never'}
         dpr={[1, isMobile ? 1.5 : 2]}
-        // flat disables tone mapping. R3F defaults to ACES Filmic, which
-        // desaturates and rolls off highlights — on a photographic card that
-        // reads as a colour filter over the photo.
+        // flat disables tone mapping, which would otherwise tint the photo.
         flat
-        // The container must not capture pointer events; the canvas re-enables
-        // them for itself only while the pointer is over the card (see Band).
+        // Band re-enables pointer events only while the pointer is over the card.
         style={{ pointerEvents: 'none' }}
         gl={{ alpha: transparent }}
         onCreated={({ gl }) => gl.setClearColor(new THREE.Color(0x000000), transparent ? 0 : 1)}
       >
         <ambientLight intensity={Math.PI} />
         <CameraRig cardHeightPx={cardHeightPx} anchorRightPx={anchorRightPx} />
-        <Physics gravity={gravity} timeStep={isMobile ? 1 / 30 : 1 / 60}>
-          <Band
-            isMobile={isMobile}
-            frontImage={frontImage}
-            backImage={backImage}
-            imageFit={imageFit}
-            lanyardImage={lanyardImage}
-            lanyardWidth={lanyardWidth}
-            ropeSegmentLength={ropeSegmentLength}
-            strapTileLength={strapTileLength}
-            dropFrom={dropFrom}
-            dropTilt={dropTilt}
-          />
-        </Physics>
-        {/* Low resolution on purpose. This builds a prefiltered cubemap on every
-            mount, and with the card unlit the map only lights the small metal
-            clip — full resolution buys nothing visible and costs time on each
-            return to the page. */}
-        <Environment blur={0.75} resolution={64}>
-          <Lightformer
-            intensity={2}
-            color="white"
-            position={[0, -1, 5]}
-            rotation={[0, 0, Math.PI / 3]}
-            scale={[100, 0.1, 1]}
-          />
-          <Lightformer
-            intensity={3}
-            color="white"
-            position={[-1, -1, 1]}
-            rotation={[0, 0, Math.PI / 3]}
-            scale={[100, 0.1, 1]}
-          />
-          <Lightformer
-            intensity={3}
-            color="white"
-            position={[1, 1, 1]}
-            rotation={[0, 0, Math.PI / 3]}
-            scale={[100, 0.1, 1]}
-          />
-          <Lightformer
-            intensity={10}
-            color="white"
-            position={[-10, 0, 14]}
-            rotation={[0, Math.PI / 2, Math.PI / 3]}
-            scale={[100, 10, 1]}
-          />
-        </Environment>
+        <Suspense fallback={null}>
+          <Physics gravity={gravity} timeStep={isMobile ? 1 / 30 : 1 / 60}>
+            <Band
+              isMobile={isMobile}
+              frontImage={frontImage}
+              backImage={backImage}
+              imageFit={imageFit}
+              lanyardImage={lanyardImage}
+              lanyardWidth={lanyardWidth}
+              ropeSegmentLength={ropeSegmentLength}
+              strapTileLength={strapTileLength}
+              dropFrom={dropFrom}
+              dropTilt={dropTilt}
+            />
+          </Physics>
+          {/* Low resolution: it only lights the small metal clip. */}
+          <Environment blur={0.75} resolution={64}>
+            <Lightformer
+              intensity={2}
+              color="white"
+              position={[0, -1, 5]}
+              rotation={[0, 0, Math.PI / 3]}
+              scale={[100, 0.1, 1]}
+            />
+            <Lightformer
+              intensity={3}
+              color="white"
+              position={[-1, -1, 1]}
+              rotation={[0, 0, Math.PI / 3]}
+              scale={[100, 0.1, 1]}
+            />
+            <Lightformer
+              intensity={3}
+              color="white"
+              position={[1, 1, 1]}
+              rotation={[0, 0, Math.PI / 3]}
+              scale={[100, 0.1, 1]}
+            />
+            <Lightformer
+              intensity={10}
+              color="white"
+              position={[-10, 0, 14]}
+              rotation={[0, Math.PI / 2, Math.PI / 3]}
+              scale={[100, 10, 1]}
+            />
+          </Environment>
+          <WarmUp onReady={setWarm} />
+        </Suspense>
       </Canvas>
     </div>
   );
@@ -276,17 +314,14 @@ function Band({
     linearDamping: 4
   };
 
-  // Starting position for a body hanging `depth` along the strap: gathered
-  // toward the anchor so it has somewhere to fall from, and leaned off vertical
-  // so it swings on the way down.
+  // Start gathered toward the anchor and tilted, so the rig drops in with a swing.
   const startAt = (depth: number): [number, number, number] => {
     const tilt = (dropTilt * Math.PI) / 180;
     const reach = depth * dropFrom;
     return [reach * Math.sin(tilt), -reach * Math.cos(tilt), 0];
   };
 
-  // Where the pointer is, tracked on window: the canvas spends most of its life
-  // with pointer events disabled, so it cannot report this itself.
+  // Tracked on window, since the canvas usually has pointer events disabled.
   const pointerPx = useRef({ x: -1e4, y: -1e4 });
   useEffect(() => {
     const onMove = (e: PointerEvent) => {
@@ -307,13 +342,10 @@ function Band({
 
   const { nodes, materials } = useGLTF(cardGLB) as any;
   const texture = useTexture(lanyardImage || lanyard);
-  // useTexture must be called unconditionally; use a blank pixel when an image
-  // isn't supplied for a given face, then skip compositing it below.
   const frontTex = useTexture(frontImage || BLANK_PIXEL);
   const backTex = useTexture(backImage || BLANK_PIXEL);
 
-  // Composite the front/back images into the card's texture atlas (front = left
-  // half, back = right half). Each image is drawn aspect-preserving (no stretch).
+  // Composite the face images into their halves of the atlas, aspect-preserving.
   const cardMap = useMemo(() => {
     const baseMap = materials.base.map as THREE.Texture;
     if (!frontImage && !backImage) return baseMap;
@@ -330,7 +362,7 @@ function Band({
     canvas.height = H;
     const ctx = canvas.getContext('2d');
     if (!ctx) return baseMap;
-    // Keep the original baked atlas for the card edges and any untouched face.
+    // Keep the baked atlas for the card edges.
     ctx.drawImage(baseImg, 0, 0, W, H);
 
     const drawFitted = (img: any, rect: typeof FRONT_UV_RECT) => {
@@ -387,9 +419,7 @@ function Band({
     }
   }, [hovered, dragged]);
 
-  // The canvas spans the page so the card can swing freely, which would
-  // otherwise make everything beneath it unclickable. Enable pointer events
-  // only while the pointer is over the card, or mid-drag.
+  // The canvas spans the page, so let clicks through unless over the card or dragging.
   const updatePointerPassthrough = (state: { gl: THREE.WebGLRenderer; camera: THREE.Camera }) => {
     const el = state.gl.domElement;
     if (dragged) {
@@ -439,9 +469,7 @@ function Band({
       const points = curve.getPoints(isMobile ? 16 : 32);
       band.current.geometry.setPoints(points);
 
-      // Tile the strap print by its actual length. meshline maps u across the
-      // whole line, so upstream's fixed repeat squeezes the print when the
-      // strap hangs short and spreads it as it is pulled.
+      // Tile the strap print by its real length so it doesn't stretch.
       let strapLength = 0;
       for (let i = 1; i < points.length; i++) strapLength += points[i].distanceTo(points[i - 1]);
       (band.current.material as InstanceType<typeof MeshLineMaterial>).repeat.set(
@@ -461,10 +489,6 @@ function Band({
     <>
       <group position={[0, 4, 0]}>
         <RigidBody ref={fixed} {...segmentProps} type="fixed" />
-        {/* Upstream starts these spread along +X, so the rig begins horizontal
-            and gravity whips it down through 90° on load. startAt begins it
-            gathered and leaning slightly, which drops it in with a small swing
-            the joint damping settles smoothly. */}
         <RigidBody position={startAt(ropeSegmentLength)} ref={j1} {...segmentProps} type="dynamic">
           <BallCollider args={[0.1]} />
         </RigidBody>
@@ -496,11 +520,7 @@ function Band({
             }}
           >
             <mesh geometry={nodes.card.geometry}>
-              {/* Unlit on purpose. A lit material modulates the map by the
-                  scene's lighting, so a photograph on the card never matches
-                  the file it came from — and upstream's metalness of 0.8 left
-                  the edges reflecting an environment that is four lightformers
-                  on black, which read as dark rims. */}
+              {/* Unlit, so the photo matches its source file. */}
               <meshBasicMaterial map={cardMap} map-anisotropy={16} toneMapped={false} />
             </mesh>
             <mesh geometry={nodes.clip.geometry} material={materials.metal} material-roughness={0.3} />
@@ -511,9 +531,7 @@ function Band({
       <mesh ref={band}>
         <meshLineGeometry />
         <meshLineMaterial
-          // Two changes upstream needs to build under this project's strict TS:
-          // the constructor args are required, and useMap is typed as a number
-          // rather than a boolean flag.
+          // args and a numeric useMap are required under strict TS.
           args={[{ resolution: new THREE.Vector2(1000, isMobile ? 2000 : 1000) }]}
           color="white"
           depthTest={false}
