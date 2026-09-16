@@ -10,6 +10,7 @@ import cardBack from '../components/Lanyard/card-back.png';
 import strapTy from '../components/Lanyard/strap-ty.png';
 import TagPill from '../components/TagPill';
 import { HERO, FEATURED_PROJECTS } from '../lib/content';
+import { markReady } from '../lib/ready';
 
 const loadLanyard = () => import('../components/Lanyard/Lanyard');
 const Lanyard = lazy(loadLanyard);
@@ -51,6 +52,11 @@ export default function Home() {
   const wide = useSyncExternalStore(subscribeLg, isLg, () => false);
   const afterPaint = useAfterFirstPaint();
 
+  // Narrow viewports never mount the lanyard, so nothing else would signal ready.
+  useEffect(() => {
+    if (!wide) markReady();
+  }, [wide]);
+
   return (
     <div className="relative">
       {/* Lanyard: z-30, above the page but below the sticky nav. */}
@@ -68,6 +74,7 @@ export default function Home() {
                 strapTileLength={0.8}
                 frontImage={cardFront}
                 backImage={cardBack}
+                onReady={markReady}
               />
             </Suspense>
           )}

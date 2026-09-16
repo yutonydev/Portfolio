@@ -2,6 +2,7 @@ import { Routes, Route } from 'react-router-dom';
 import Nav from './components/Nav';
 import Footer from './components/Footer';
 import PixelBlast from './components/PixelBlast/PixelBlast';
+import LoadingGate from './components/Loading/LoadingGate';
 import Home from './pages/Home';
 import Projects from './pages/Projects';
 import About from './pages/About';
@@ -42,6 +43,9 @@ export default function App() {
         </main>
         <Footer />
       </div>
+
+      {/* Last, and fixed above everything: the page starts up behind it. */}
+      <LoadingGate />
     </div>
   );
 }

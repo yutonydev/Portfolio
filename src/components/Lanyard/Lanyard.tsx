@@ -1,6 +1,6 @@
 /* eslint-disable react/no-unknown-property */
 'use client';
-import { useEffect, useMemo, useRef, useState, Suspense } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState, Suspense } from 'react';
 import { Canvas, extend, useFrame, useThree, type ThreeElement, type ThreeEvent } from '@react-three/fiber';
 import { useGLTF, useTexture, Environment, Lightformer } from '@react-three/drei';
 import {
@@ -143,6 +143,12 @@ function WarmUp({ onReady }: { onReady: (ready: boolean) => void }) {
         await nextFrame();
       }
 
+      // compile() misses the program the strap's material actually renders with,
+      // so draw one hidden frame and let the loop reuse what it builds.
+      if (cancelled) return;
+      gl.render(scene, camera);
+      await nextFrame();
+
       if (!cancelled) onReady(true);
     })();
 
@@ -181,6 +187,8 @@ interface LanyardProps {
   dropInFrom?: number | 'auto' | null;
   /** Seconds the rig takes to travel down into place. */
   dropInDuration?: number;
+  /** Called once the card is warmed up and about to drop. */
+  onReady?: () => void;
 }
 
 export default function Lanyard({
@@ -200,10 +208,22 @@ export default function Lanyard({
   dropFrom = 0.55,
   dropTilt = 16,
   dropInFrom = 'auto',
-  dropInDuration = 0.7
+  dropInDuration = 0.7,
+  onReady
 }: LanyardProps) {
   const [isMobile, setIsMobile] = useState<boolean>(() => typeof window !== 'undefined' && window.innerWidth < 768);
   const [warm, setWarm] = useState(false);
+
+  // Stable identity: WarmUp's effect depends on it, so a fresh callback each
+  // render would restart the warm-up.
+  const onReadyRef = useRef(onReady);
+  useEffect(() => {
+    onReadyRef.current = onReady;
+  }, [onReady]);
+  const handleWarm = useCallback((ready: boolean) => {
+    setWarm(ready);
+    onReadyRef.current?.();
+  }, []);
 
   useEffect(() => {
     const handleResize = (): void => setIsMobile(window.innerWidth < 768);
@@ -277,7 +297,7 @@ export default function Lanyard({
               scale={[100, 10, 1]}
             />
           </Environment>
-          <WarmUp onReady={setWarm} />
+          <WarmUp onReady={handleWarm} />
         </Suspense>
       </Canvas>
     </div>
@@ -458,6 +478,13 @@ function Band({
   const [dragged, drag] = useState<false | THREE.Vector3>(false);
   const [hovered, hover] = useState(false);
 
+  // Held across renders: R3F rebuilds the material when an args entry changes by
+  // reference, and relinking its shader blocks for ~70ms.
+  const meshLineArgs = useMemo(
+    () => [{ resolution: new THREE.Vector2(1000, isMobile ? 2000 : 1000) }] as [{ resolution: THREE.Vector2 }],
+    [isMobile]
+  );
+
   useRopeJoint(fixed, j1, [[0, 0, 0], [0, 0, 0], ropeSegmentLength]);
   useRopeJoint(j1, j2, [[0, 0, 0], [0, 0, 0], ropeSegmentLength]);
   useRopeJoint(j2, j3, [[0, 0, 0], [0, 0, 0], ropeSegmentLength]);
@@ -611,7 +638,7 @@ function Band({
         <meshLineGeometry />
         <meshLineMaterial
           // args and a numeric useMap are required under strict TS.
-          args={[{ resolution: new THREE.Vector2(1000, isMobile ? 2000 : 1000) }]}
+          args={meshLineArgs}
           color="white"
           depthTest={false}
           resolution={isMobile ? [1000, 2000] : [1000, 1000]}

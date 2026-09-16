@@ -54,6 +54,26 @@
   }
 }
 
+/* Loading cover: cells pulse in a wavefront, the label shimmers left to right. */
+@keyframes pixelOn {
+  0%,
+  100% {
+    opacity: 0.12;
+  }
+  50% {
+    opacity: 1;
+  }
+}
+
+@keyframes shimmerText {
+  0% {
+    background-position: 200% 0;
+  }
+  100% {
+    background-position: -200% 0;
+  }
+}
+
 @keyframes pulseDot {
   0%,
   100% {
