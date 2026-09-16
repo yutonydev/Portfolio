@@ -38,8 +38,8 @@ declare module '@react-three/fiber' {
 const BLANK_PIXEL =
   'data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mNk+M9QDwADhgGAWjR9awAAAABJRU5ErkJggg==';
 
-// Front face maps to the left half of the atlas, back face to the right.
-// 0.7572 is the mesh's real max V; lower values leave a strip of the old texture.
+// Front face maps to the left half of the atlas and back to the right, down to
+// 0.7572, the mesh's real max V.
 const FRONT_UV_RECT = { x: 0, y: 0, w: 0.5, h: 0.7572 };
 const BACK_UV_RECT = { x: 0.5, y: 0, w: 0.5, h: 0.7572 };
 
@@ -49,10 +49,28 @@ const CARD_HIT_RADIUS = 1.35;
 /** Height of the card in world units — its collider is 0.8 x 1.125 half-extents. */
 const CARD_WORLD_HEIGHT = 2.25;
 
-/**
- * Sets the camera imperatively, since R3F ignores later changes to <Canvas camera>.
- * Pins the card's on-screen height and hangs the rig anchorRightPx from the right edge.
- */
+/** World distance from the card body's centre to the bottom of its collider. */
+const CARD_HALF_HEIGHT = CARD_WORLD_HEIGHT / 2;
+
+/** World distance from the last rope joint down to the card body. */
+const CARD_JOINT_REACH = 1.45;
+
+/** Where the strap hangs from once it has settled, in world space. */
+const RIG_ANCHOR: [number, number, number] = [0, 4, 0];
+
+/** How much heavier the rig falls while dropping in, since a slack rope leaves the card behind the anchor. */
+const DROP_IN_GRAVITY_SCALE = 3;
+
+const halfFovTan = (fov: number) => Math.tan((fov * Math.PI) / 180 / 2);
+
+/** Camera distance at which the card renders cardHeightPx tall. */
+const distanceForCardHeight = (fov: number, viewportHeightPx: number, cardHeightPx: number) =>
+  (CARD_WORLD_HEIGHT * viewportHeightPx) / (2 * halfFovTan(fov) * cardHeightPx);
+
+/** Half the world height the camera sees at a given distance. */
+const visibleHalfHeight = (fov: number, distance: number) => halfFovTan(fov) * distance;
+
+/** Sets the camera imperatively, since R3F ignores later changes to <Canvas camera>. */
 function CameraRig({
   cardHeightPx,
   anchorRightPx
@@ -64,14 +82,13 @@ function CameraRig({
 
   useEffect(() => {
     const cam = camera as THREE.PerspectiveCamera;
-    const halfFovTan = Math.tan((cam.fov * Math.PI) / 180 / 2);
 
     if (cardHeightPx != null && cardHeightPx > 0) {
-      cam.position.z = (CARD_WORLD_HEIGHT * size.height) / (2 * halfFovTan * cardHeightPx);
+      cam.position.z = distanceForCardHeight(cam.fov, size.height, cardHeightPx);
     }
 
     if (anchorRightPx != null) {
-      const unitsPerPx = (2 * halfFovTan * cam.position.z) / size.height;
+      const unitsPerPx = (2 * visibleHalfHeight(cam.fov, cam.position.z)) / size.height;
       cam.position.x = -(size.width - anchorRightPx - size.width / 2) * unitsPerPx;
     }
 
@@ -81,10 +98,7 @@ function CameraRig({
   return null;
 }
 
-/**
- * Uploads textures and links shaders one per frame before the loop starts, so the
- * first render doesn't freeze the page. compileAsync was over a second slower.
- */
+/** Uploads textures and links shaders one per frame before the loop starts, so the first render doesn't freeze the page. */
 function WarmUp({ onReady }: { onReady: (ready: boolean) => void }) {
   const { gl, scene, camera } = useThree();
 
@@ -120,8 +134,7 @@ function WarmUp({ onReady }: { onReady: (ready: boolean) => void }) {
       gl.compile(scene, camera);
       await nextFrame();
 
-      // compile() defers the blocking link check; getUniforms forces it. Uses
-      // three internals, so it's skipped if their shape changes.
+      // compile() defers the blocking link check, which getUniforms forces.
       for (const program of gl.info.programs ?? []) {
         if (cancelled) return;
         const { getUniforms } = program as { getUniforms?: () => unknown };
@@ -164,6 +177,10 @@ interface LanyardProps {
   dropFrom?: number;
   /** Degrees off vertical the rig starts at, giving the drop a swing. */
   dropTilt?: number;
+  /** World units above its resting place the rig falls from, 'auto' to clear the canvas, or null to hang in place. */
+  dropInFrom?: number | 'auto' | null;
+  /** Seconds the rig takes to travel down into place. */
+  dropInDuration?: number;
 }
 
 export default function Lanyard({
@@ -181,7 +198,9 @@ export default function Lanyard({
   ropeSegmentLength = 1,
   strapTileLength = 0.8,
   dropFrom = 0.55,
-  dropTilt = 16
+  dropTilt = 16,
+  dropInFrom = 'auto',
+  dropInDuration = 0.7
 }: LanyardProps) {
   const [isMobile, setIsMobile] = useState<boolean>(() => typeof window !== 'undefined' && window.innerWidth < 768);
   const [warm, setWarm] = useState(false);
@@ -221,6 +240,10 @@ export default function Lanyard({
               strapTileLength={strapTileLength}
               dropFrom={dropFrom}
               dropTilt={dropTilt}
+              dropInFrom={dropInFrom}
+              dropInDuration={dropInDuration}
+              fov={fov}
+              cardHeightPx={cardHeightPx}
             />
           </Physics>
           {/* Low resolution: it only lights the small metal clip. */}
@@ -274,6 +297,10 @@ interface BandProps {
   strapTileLength?: number;
   dropFrom?: number;
   dropTilt?: number;
+  dropInFrom?: number | 'auto' | null;
+  dropInDuration?: number;
+  fov?: number;
+  cardHeightPx?: number | null;
 }
 
 type LanyardRigidBody = RapierRigidBody & {
@@ -292,7 +319,11 @@ function Band({
   ropeSegmentLength = 1,
   strapTileLength = 0.8,
   dropFrom = 0.55,
-  dropTilt = 16
+  dropTilt = 16,
+  dropInFrom = 'auto',
+  dropInDuration = 0.7,
+  fov = 20,
+  cardHeightPx = null
 }: BandProps) {
   const band = useRef<THREE.Mesh<InstanceType<typeof MeshLineGeometry>, InstanceType<typeof MeshLineMaterial>>>(null!);
   const fixed = useRef<RapierRigidBody>(null!);
@@ -301,24 +332,49 @@ function Band({
   const j3 = useRef<RapierRigidBody>(null!);
   const card = useRef<RapierRigidBody>(null!);
 
+  const { camera, size } = useThree();
+
   const vec = new THREE.Vector3();
   const ang = new THREE.Vector3();
   const rot = new THREE.Vector3();
   const dir = new THREE.Vector3();
 
+  const [prefersReducedMotion] = useState(
+    () => typeof window !== 'undefined' && window.matchMedia('(prefers-reduced-motion: reduce)').matches
+  );
+
+  // Held from mount on, because the bodies are created at this offset and a
+  // resize mid-fall must not move it under them.
+  const [dropInOffset] = useState(() => {
+    if (prefersReducedMotion || dropInFrom == null) return 0;
+    if (typeof dropInFrom === 'number') return Math.max(0, dropInFrom);
+
+    const distance =
+      cardHeightPx != null && cardHeightPx > 0
+        ? distanceForCardHeight(fov, size.height, cardHeightPx)
+        : camera.position.z;
+    const topEdge = visibleHalfHeight(fov, distance);
+    const reach = (3 * ropeSegmentLength + CARD_JOINT_REACH) * dropFrom + CARD_HALF_HEIGHT;
+    return Math.max(0, topEdge + reach - RIG_ANCHOR[1] + 0.5);
+  });
+  const dropInElapsed = useRef(0);
+  const [dropping, setDropping] = useState(() => dropInOffset > 0);
+
+  // Declared after the drop-in, whose weighting it carries while the rig falls.
   const segmentProps: RigidBodyProps = {
     type: 'dynamic',
     canSleep: true,
     colliders: false,
     angularDamping: 4,
-    linearDamping: 4
+    linearDamping: 4,
+    gravityScale: dropping ? DROP_IN_GRAVITY_SCALE : 1
   };
 
-  // Start gathered toward the anchor and tilted, so the rig drops in with a swing.
+  // Gathered toward the anchor and tilted, so the rig drops in with a swing.
   const startAt = (depth: number): [number, number, number] => {
     const tilt = (dropTilt * Math.PI) / 180;
     const reach = depth * dropFrom;
-    return [reach * Math.sin(tilt), -reach * Math.cos(tilt), 0];
+    return [reach * Math.sin(tilt), dropInOffset - reach * Math.cos(tilt), 0];
   };
 
   // Tracked on window, since the canvas usually has pointer events disabled.
@@ -442,8 +498,25 @@ function Band({
     el.style.pointerEvents = dx * dx + dy * dy <= radiusPx * radiusPx ? 'auto' : 'none';
   };
 
+  // Only the anchor is animated; the strap and card trail behind on the rope.
+  const advanceDropIn = (delta: number) => {
+    if (dropInOffset <= 0 || dropInElapsed.current >= dropInDuration || !fixed.current) return;
+
+    dropInElapsed.current = Math.min(dropInDuration, dropInElapsed.current + delta);
+    const t = dropInElapsed.current / dropInDuration;
+    const remaining = Math.pow(1 - t, 3);
+    if (t >= 1) setDropping(false);
+    [card, j1, j2, j3].forEach(ref => ref.current?.wakeUp());
+    fixed.current.setNextKinematicTranslation({
+      x: RIG_ANCHOR[0],
+      y: RIG_ANCHOR[1] + dropInOffset * remaining,
+      z: RIG_ANCHOR[2]
+    });
+  };
+
   useFrame((state, delta) => {
     updatePointerPassthrough(state);
+    advanceDropIn(delta);
 
     if (dragged && typeof dragged !== 'boolean') {
       vec.set(state.pointer.x, state.pointer.y, 0.5).unproject(state.camera);
@@ -487,8 +560,14 @@ function Band({
 
   return (
     <>
-      <group position={[0, 4, 0]}>
-        <RigidBody ref={fixed} {...segmentProps} type="fixed" />
+      <group position={RIG_ANCHOR}>
+        {/* Kinematic only while it has a drop-in to travel, otherwise fixed. */}
+        <RigidBody
+          ref={fixed}
+          position={[0, dropInOffset, 0]}
+          {...segmentProps}
+          type={dropInOffset > 0 ? 'kinematicPosition' : 'fixed'}
+        />
         <RigidBody position={startAt(ropeSegmentLength)} ref={j1} {...segmentProps} type="dynamic">
           <BallCollider args={[0.1]} />
         </RigidBody>
@@ -499,7 +578,7 @@ function Band({
           <BallCollider args={[0.1]} />
         </RigidBody>
         <RigidBody
-          position={startAt(3 * ropeSegmentLength + 1.45)}
+          position={startAt(3 * ropeSegmentLength + CARD_JOINT_REACH)}
           ref={card}
           {...segmentProps}
           type={dragged ? 'kinematicPosition' : 'dynamic'}
