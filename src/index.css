@@ -37,6 +37,36 @@
     color-scheme: dark;
   }
 
+  html {
+    overflow-y: scroll;
+  }
+
+  ::-webkit-scrollbar {
+    width: 10px;
+  }
+
+  ::-webkit-scrollbar-track {
+    background: transparent;
+  }
+
+  ::-webkit-scrollbar-thumb {
+    background: linear-gradient(180deg, transparent, #6f74e8 45%, #6f74e8 55%, transparent);
+    border-radius: 999px;
+  }
+
+  ::-webkit-scrollbar-thumb:hover {
+    background: linear-gradient(180deg, transparent, #8f93ee 40%, #8f93ee 60%, transparent);
+  }
+
+  /* Firefox only: Chrome discards every ::-webkit-scrollbar rule above if it
+     sees these standard properties, which flattens the gradient. */
+  @supports not selector(::-webkit-scrollbar) {
+    :root {
+      scrollbar-width: thin;
+      scrollbar-color: #6f74e8 transparent;
+    }
+  }
+
   body {
     margin: 0;
     /* Here, not the app wrapper, so the fixed shader has something to sit on. */

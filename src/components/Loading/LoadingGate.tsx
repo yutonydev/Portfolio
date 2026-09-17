@@ -5,18 +5,20 @@ import { isReady, subscribeReady } from '../../lib/ready';
 
 const LABELS = ['Prototyping', 'Playtesting', 'Shipping'];
 
-/** Shortest the cover stays up, so a fast load is a beat rather than a flash. */
 const MIN_MS = 1200;
 
-/** Lifts regardless after this, so a failed signal can never trap the page. */
 const CAP_MS = 5000;
 
 const FADE_MS = 400;
 
-/** Covers the page while it starts up, hiding work that would show as a stutter. */
+const SCROLL_KEYS = new Set([' ', 'PageUp', 'PageDown', 'Home', 'End', 'ArrowUp', 'ArrowDown']);
+
+// Not 1: a fully opaque cover lets the browser skip rasterising the page
+// behind it, then drops ~150ms of frames doing it all at the reveal.
+const COVER_OPACITY = 0.99;
+
 export default function LoadingGate() {
   const { pathname } = useLocation();
-  // Read once: this is about how the page was entered, not where it goes later.
   const [entryIsHome] = useState(() => pathname === '/');
   const [visible, setVisible] = useState(true);
   const [leaving, setLeaving] = useState(false);
@@ -34,7 +36,6 @@ export default function LoadingGate() {
 
     const reduced = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
 
-    // Only Home has something heavy to wait for; elsewhere a painted frame is enough.
     const ready = new Promise<void>(resolve => {
       if (!entryIsHome) {
         requestAnimationFrame(() => requestAnimationFrame(() => resolve()));
@@ -59,13 +60,19 @@ export default function LoadingGate() {
     };
   }, [entryIsHome]);
 
-  // Layout, not passive: the lock lifts in the same commit that removes the cover.
   useLayoutEffect(() => {
     if (!visible) return;
-    const previous = document.body.style.overflow;
-    document.body.style.overflow = 'hidden';
+    const stop = (e: Event) => e.preventDefault();
+    const stopKeys = (e: KeyboardEvent) => {
+      if (SCROLL_KEYS.has(e.key) && !(e.target as HTMLElement)?.closest?.('input, textarea')) e.preventDefault();
+    };
+    window.addEventListener('wheel', stop, { passive: false });
+    window.addEventListener('touchmove', stop, { passive: false });
+    window.addEventListener('keydown', stopKeys);
     return () => {
-      document.body.style.overflow = previous;
+      window.removeEventListener('wheel', stop);
+      window.removeEventListener('touchmove', stop);
+      window.removeEventListener('keydown', stopKeys);
     };
   }, [visible]);
 
@@ -75,15 +82,11 @@ export default function LoadingGate() {
 
   return (
     <div
-      // Above the nav's z-40, and opaque, so the page starts up unseen behind it.
-      className={`fixed inset-0 z-50 flex items-center justify-center bg-bg transition-opacity ${
-        leaving ? 'opacity-0' : 'opacity-100'
-      }`}
-      style={{ transitionDuration: `${FADE_MS}ms` }}
+      className="fixed inset-0 z-50 flex items-center justify-center bg-bg transition-opacity"
+      style={{ opacity: leaving ? 0 : COVER_OPACITY, transitionDuration: `${FADE_MS}ms` }}
       role="status"
       aria-live="polite"
     >
-      {/* The cycling words would be read out one by one, so announce once instead. */}
       <span className="sr-only">Loading</span>
       <LoadingState labels={LABELS} animate={!reduced} />
     </div>
