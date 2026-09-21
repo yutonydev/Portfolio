@@ -265,6 +265,6 @@ export const SKILL_GROUPS: SkillGroup[] = [
 
 export const CONTACT = {
   heading: "Let's talk",
-  body: 'Got a project, a role, or just want to talk shop? Drop a note below or reach me directly.',
+  body: 'Got a project, a role, or just want to chat? Drop a note below or reach me directly.',
   errorBody: 'Something went wrong sending that. Try again, or email me directly.',
 };
