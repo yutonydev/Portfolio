@@ -29,10 +29,7 @@ const PHOTOS = [
   { image: nightOut, alt: 'Walking outside at night in a hoodie' }
 ];
 
-/**
- * 700x933 renders at 280x373: DepthCarousel scales every card, bottoming out
- * at its 0.4 floor in a column this narrow. 240 would have drawn at 115.
- */
+/** Renders at 280x373: the carousel bottoms out at its 0.4 scale floor in a column this narrow. */
 const CARD_WIDTH = 700;
 const CARD_HEIGHT = 933;
 

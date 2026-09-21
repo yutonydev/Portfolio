@@ -1,0 +1,655 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>StrengthAI Trailer</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Instrument+Sans:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;600&display=swap" media="print" onload="this.media='all'">
+<noscript><link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Instrument+Sans:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;600&display=swap"></noscript>
+
+<style>
+  :root {
+    --ground: #0A0B0A;
+    --screen: #101211;
+    --card: #171A18;
+    --raised: #1E2220;
+    --line: #272C29;
+    --ink: #ECEFEA;
+    --ink-dim: #8A928C;
+    --accent: #A8C9A2;
+    --on-accent: #12160B;
+    --warn: #F2B544;
+
+    --sans: 'Instrument Sans', ui-sans-serif, system-ui, -apple-system, 'Segoe UI', sans-serif;
+    --mono: 'JetBrains Mono', ui-monospace, 'SF Mono', Menlo, monospace;
+
+    --ease: cubic-bezier(.32, .72, 0, 1);
+    --rise: cubic-bezier(.22, 1, .36, 1);
+  }
+
+  * { box-sizing: border-box; }
+
+  body {
+    margin: 0;
+    background: var(--ground);
+    color: var(--ink);
+    font-family: var(--sans);
+    -webkit-font-smoothing: antialiased;
+    display: flex;
+    justify-content: center;
+  }
+
+  .wrap {
+    width: 100%;
+    max-width: 700px;
+    padding-inline: 16px;
+    padding-block: 16px;
+    display: flex;
+    align-items: center;
+    gap: 28px;
+  }
+
+  /* The scenes are laid out at 400x700; the frame shows them smaller without
+     reflowing any of it, which keeps the whole thing short enough to sit on
+     screen beside its own captions. */
+  .stage-frame { flex: none; width: 300px; height: 525px; }
+  .side { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 18px; }
+
+  .masthead { display: flex; flex-direction: column; gap: 6px; }
+  .masthead h1 {
+    margin: 0;
+    font-size: clamp(18px, 3.2vw, 23px);
+    font-weight: 700;
+    letter-spacing: -.035em;
+    text-wrap: balance;
+  }
+  .masthead p {
+    margin: 0;
+    color: var(--ink-dim);
+    font-size: 12.5px;
+    letter-spacing: .01em;
+  }
+
+  .stage {
+    position: relative;
+    width: 400px;
+    height: 700px;
+    transform: scale(.75);
+    transform-origin: top left;
+    background: var(--screen);
+    border-left: 1px solid var(--accent);
+    border-right: 1px solid var(--accent);
+    overflow: hidden;
+    box-shadow: 0 30px 90px -40px rgba(168, 201, 162, .45);
+  }
+
+  .scene {
+    position: absolute;
+    inset: 0;
+    padding: 26px 20px;
+    display: flex;
+    flex-direction: column;
+    opacity: 0;
+    visibility: hidden;
+    transition: opacity .34s var(--rise);
+  }
+  .scene.is-on { opacity: 1; visibility: visible; }
+
+  .open { align-items: center; justify-content: center; gap: 0; }
+  .mark-wrap {
+    position: relative;
+    display: grid;
+    place-items: center;
+    width: 190px;
+    height: 190px;
+  }
+  .halo {
+    position: absolute;
+    width: 190px; height: 190px; border-radius: 999px;
+    background: radial-gradient(circle,
+      color-mix(in srgb, var(--accent) 30%, transparent) 0%,
+      color-mix(in srgb, var(--accent) 10%, transparent) 42%,
+      transparent 68%);
+    filter: blur(8px);
+    animation: halo 2.9s ease-in-out infinite;
+  }
+  .ring {
+    position: absolute;
+    width: 190px; height: 190px; border-radius: 999px;
+    border: 1px solid color-mix(in srgb, var(--accent) 55%, transparent);
+    animation: ring 2.9s var(--ease) infinite;
+  }
+  @keyframes halo {
+    0%, 100% { opacity: .4; transform: scale(.9); }
+    50%      { opacity: 1;  transform: scale(1.06); }
+  }
+  @keyframes ring {
+    0%   { opacity: 0;   transform: scale(.4); }
+    18%  { opacity: .55; transform: scale(.52); }
+    75%  { opacity: 0;   transform: scale(1); }
+    100% { opacity: 0;   transform: scale(1); }
+  }
+  .mark {
+    position: relative;
+    width: 72px; height: 72px; border-radius: 16px;
+    background: linear-gradient(145deg, #DCE7C4 0%, #A8C9A2 45%, #6E9BA6 100%);
+    display: grid; place-items: center;
+    box-shadow: 0 0 0 1px color-mix(in srgb, var(--accent) 20%, transparent),
+                0 10px 34px -8px color-mix(in srgb, var(--accent) 42%, transparent);
+  }
+  .mark svg { width: 40px; height: 40px; }
+  .wordmark { margin-top: -14px; font-size: 23px; font-weight: 700; letter-spacing: -.03em; }
+  .tagline { margin-top: 5px; font-size: 13px; color: var(--ink-dim); }
+
+  .eyebrow {
+    font-size: 10px; font-weight: 600; text-transform: uppercase;
+    letter-spacing: .12em; color: var(--ink-dim);
+  }
+  .panel {
+    background: var(--card);
+    border: 1px solid var(--line);
+    border-radius: 16px;
+    padding: 14px;
+  }
+  .chips { display: flex; flex-wrap: wrap; gap: 5px; }
+  .chip {
+    font-size: 10.5px; padding: 3px 8px; border-radius: 999px;
+    background: var(--raised); color: var(--ink-dim); border: 1px solid var(--line);
+  }
+  .num { font-family: var(--mono); font-variant-numeric: tabular-nums; }
+
+  .field {
+    background: var(--screen);
+    border: 1px solid var(--line);
+    border-radius: 14px;
+    padding: 13px 14px;
+    font-size: 14px;
+    min-height: 46px;
+    display: flex; align-items: center;
+  }
+  .caret {
+    display: inline-block; width: 1.5px; height: 16px; margin-left: 2px;
+    background: var(--accent); animation: blink 1s steps(2) infinite; vertical-align: -3px;
+  }
+  @keyframes blink { 50% { opacity: 0; } }
+
+  .verdict { margin-top: 12px; opacity: 0; transform: translateY(8px); }
+  .verdict.show { animation: rise .42s var(--rise) forwards; }
+  @keyframes rise { to { opacity: 1; transform: none; } }
+
+  .verdict-name { font-size: 19px; font-weight: 700; letter-spacing: -.02em; margin-bottom: 8px; }
+  .trains { margin-top: 12px; display: flex; flex-direction: column; gap: 5px; }
+  .trains-row { display: flex; gap: 6px; flex-wrap: wrap; }
+  .tag-good {
+    font-size: 10.5px; padding: 3px 8px; border-radius: 999px;
+    background: color-mix(in srgb, var(--accent) 12%, transparent);
+    color: var(--accent);
+    border: 1px solid color-mix(in srgb, var(--accent) 26%, transparent);
+  }
+  .loadnote {
+    margin-top: 13px;
+    background: var(--screen);
+    border: 1px solid var(--line);
+    border-radius: 14px;
+    padding: 11px 12px;
+  }
+  .loadnote-body {
+    margin-top: 6px;
+    font-size: 11.5px;
+    line-height: 1.55;
+    color: var(--ink-dim);
+  }
+
+  .setgrid { width: 100%; border-collapse: collapse; margin-top: 10px; }
+  .setgrid th {
+    font-size: 9.5px; text-transform: uppercase; letter-spacing: .1em;
+    color: var(--ink-dim); text-align: right; font-weight: 600; padding-bottom: 7px;
+  }
+  .setgrid th:first-child, .setgrid td:first-child { text-align: left; }
+  .setgrid td {
+    font-family: var(--mono); font-variant-numeric: tabular-nums;
+    font-size: 13px; text-align: right; padding: 7px 0;
+    border-top: 1px solid var(--line);
+  }
+  .setrow { opacity: 0; }
+  .setrow.show { animation: rise .38s var(--rise) forwards; }
+
+  .rirbar { display: flex; gap: 3px; margin-top: 14px; }
+  .rir {
+    flex: 1; height: 38px; border-radius: 11px;
+    border: 1px solid var(--line); background: var(--screen);
+    display: grid; place-items: center;
+    font-family: var(--mono); font-size: 12.5px; color: var(--ink-dim);
+    transition: all .26s var(--ease);
+  }
+  .rir.pick { background: var(--accent); color: var(--on-accent); border-color: var(--accent); font-weight: 600; }
+
+  .rest {
+    margin-top: auto; display: flex; align-items: center; gap: 10px;
+    background: var(--raised); border: 1px solid var(--line);
+    border-radius: 14px; padding: 11px 13px;
+  }
+  .rest-time { font-family: var(--mono); font-size: 16px; color: var(--accent); }
+  .rest-label { font-size: 12px; color: var(--ink-dim); }
+
+  .chartbox { margin-top: 12px; }
+  .chart { width: 100%; height: 120px; display: block; }
+  .stallcard {
+    margin-top: 14px;
+    border: 1px solid color-mix(in srgb, var(--warn) 30%, transparent);
+    background: color-mix(in srgb, var(--warn) 8%, transparent);
+    border-radius: 16px; padding: 13px;
+  }
+  .stall-flag {
+    font-size: 9.5px; font-weight: 700; letter-spacing: .09em;
+    color: var(--warn); text-transform: uppercase;
+  }
+  .stall-body { margin-top: 7px; font-size: 12.5px; line-height: 1.55; color: var(--ink); }
+  .rx { margin-top: 10px; display: flex; flex-direction: column; gap: 6px; }
+  .rx div { font-size: 11.5px; color: var(--ink-dim); padding-left: 12px; position: relative; }
+  .rx div::before {
+    content: ''; position: absolute; left: 0; top: 7px;
+    width: 4px; height: 4px; border-radius: 999px; background: var(--warn);
+  }
+
+  .ask {
+    align-self: flex-end; max-width: 78%;
+    background: var(--accent); color: var(--on-accent);
+    border-radius: 16px 16px 4px 16px; padding: 10px 13px;
+    font-size: 13px; font-weight: 500;
+  }
+  .reply {
+    margin-top: 12px; max-width: 92%;
+    background: var(--card); border: 1px solid var(--line);
+    border-radius: 16px 16px 16px 4px; padding: 13px;
+    font-size: 12.5px; line-height: 1.62; color: var(--ink);
+  }
+  .reply b { color: var(--accent); font-weight: 600; font-family: var(--mono); font-size: 12px; }
+  .grounded {
+    margin-top: 12px; font-size: 10.5px; color: var(--ink-dim);
+    display: flex; align-items: center; gap: 6px;
+  }
+  .dot-good { width: 5px; height: 5px; border-radius: 999px; background: var(--accent); }
+
+  .close { align-items: center; justify-content: center; text-align: center; gap: 14px; }
+  .close-line { font-size: 15px; line-height: 1.6; color: var(--ink-dim); max-width: 280px; }
+  .close-line em { color: var(--ink); font-style: normal; font-weight: 600; }
+
+  .caption {
+    width: 100%;
+    /* Fits the longest scene's line, so the transport below does not jump as
+       captions change and the page keeps one height when embedded. */
+    min-height: 150px;
+    display: flex; flex-direction: column; gap: 5px;
+  }
+  .caption .k {
+    font-size: 10px; font-weight: 600; letter-spacing: .13em;
+    text-transform: uppercase; color: var(--accent);
+  }
+  .caption .v { font-size: 14.5px; line-height: 1.5; color: var(--ink-dim); text-wrap: balance; }
+
+  .transport { width: 100%; display: flex; flex-direction: column; gap: 12px; }
+
+  /* Opened on its own on a narrow screen, it goes back to a single column. */
+  @media (max-width: 620px) {
+    .wrap { flex-direction: column; align-items: center; }
+    .side { width: 100%; max-width: 400px; }
+    .masthead { text-align: center; }
+  }
+  .bars { display: flex; gap: 5px; }
+  .bar {
+    flex: 1; height: 3px; border-radius: 999px; background: var(--line);
+    overflow: hidden; border: 0; padding: 0; cursor: pointer;
+  }
+  .bar span { display: block; height: 100%; width: 0; background: var(--accent); }
+  .bar:focus-visible { outline: 2px solid var(--accent); outline-offset: 3px; }
+
+  .controls { display: flex; align-items: center; justify-content: space-between; gap: 12px; }
+  .btn {
+    font-family: var(--sans); font-size: 12.5px; font-weight: 600;
+    background: var(--card); color: var(--ink);
+    border: 1px solid var(--line); border-radius: 11px;
+    padding: 9px 15px; cursor: pointer;
+    transition: border-color .2s var(--ease);
+  }
+  .btn:hover { border-color: var(--accent); }
+  .btn:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+  .counter { font-family: var(--mono); font-size: 11.5px; color: var(--ink-dim); }
+
+  @media (prefers-reduced-motion: reduce) {
+    .halo, .ring, .caret { animation: none; }
+    .scene { transition: none; }
+    .verdict, .setrow { opacity: 1; transform: none; animation: none; }
+  }
+
+</style>
+</head>
+<body>
+
+<div class="wrap">
+
+  <div class="stage-frame">
+    <div class="stage" id="stage">
+
+      <section class="scene open is-on" data-scene="0">
+        <div class="mark-wrap">
+          <div class="halo"></div>
+          <div class="ring"></div>
+          <div class="mark">
+            <svg viewBox="0 0 24 24" fill="none" stroke="#12160B" stroke-width="2.1" stroke-linecap="round">
+              <path d="M4 9v6M7 7v10M17 7v10M20 9v6M7 12h10"/>
+            </svg>
+          </div>
+        </div>
+        <div class="wordmark">StrengthAI</div>
+        <div class="tagline">Train Smarter</div>
+      </section>
+
+      <section class="scene" data-scene="1">
+        <div class="eyebrow">What are you doing?</div>
+        <div class="field" style="margin-top:10px">
+          <span id="typed"></span><i class="caret" id="caret"></i>
+        </div>
+        <div class="verdict panel" id="verdict">
+          <div class="verdict-name">Tricep Extension</div>
+          <div class="chips">
+            <span class="chip">cable</span>
+            <span class="chip">cuff</span>
+            <span class="chip">single arm</span>
+          </div>
+          <div class="trains">
+            <div class="eyebrow">Joint actions</div>
+            <div class="trains-row">
+              <span class="chip">elbow extension</span>
+            </div>
+          </div>
+          <div class="trains">
+            <div class="eyebrow">Trains</div>
+            <div class="trains-row">
+              <span class="tag-good">triceps</span>
+            </div>
+          </div>
+          <div class="loadnote">
+            <div class="eyebrow">Why the load will differ</div>
+            <div class="loadnote-body">Single-arm loading increases core and shoulder stabilisation demand compared to bilateral extension.</div>
+          </div>
+        </div>
+      </section>
+
+      <section class="scene" data-scene="2">
+        <div class="eyebrow">Incline Press</div>
+        <div class="chips" style="margin-top:8px">
+          <span class="chip">barbell</span><span class="chip">close bench</span>
+          <span class="chip">narrow grip</span><span class="chip">paused</span>
+        </div>
+        <table class="setgrid">
+          <thead><tr><th>#</th><th>Weight</th><th>Reps</th><th>RIR</th><th>RPE</th></tr></thead>
+          <tbody>
+            <tr class="setrow" id="row1"><td>1</td><td>135 lb</td><td>8</td><td>2</td><td>8</td></tr>
+            <tr class="setrow" id="row2"><td>2</td><td>155 lb</td><td>6</td><td>2</td><td>8</td></tr>
+          </tbody>
+        </table>
+        <div class="eyebrow" style="margin-top:16px">Reps in reserve</div>
+        <div class="rirbar">
+          <div class="rir">0</div><div class="rir">1</div><div class="rir" id="rirPick">2</div>
+          <div class="rir">3</div><div class="rir">4</div><div class="rir">5</div>
+        </div>
+        <div class="rest">
+          <div class="rest-time num" id="restClock">2:29</div>
+          <div class="rest-label">Rest &middot; Incline Press</div>
+        </div>
+      </section>
+
+      <section class="scene" data-scene="3">
+        <div class="eyebrow">RIR at matched load</div>
+        <div class="chartbox panel">
+          <div style="display:flex;justify-content:space-between;align-items:baseline">
+            <div style="font-size:12px;color:var(--ink-dim)">3 matched sessions at <span class="num">135 lb</span></div>
+            <div style="font-size:11px;color:var(--warn);font-weight:600">&#9660; Declining</div>
+          </div>
+          <svg class="chart" viewBox="0 0 300 120" role="img" aria-label="RIR falling from 2 to 0 across three sessions at the same load">
+            <line x1="28" y1="14" x2="292" y2="14" stroke="#272C29" stroke-width="1"/>
+            <line x1="28" y1="60" x2="292" y2="60" stroke="#272C29" stroke-width="1"/>
+            <line x1="28" y1="106" x2="292" y2="106" stroke="#272C29" stroke-width="1"/>
+            <text x="18" y="18" fill="#8A928C" font-size="10" font-family="JetBrains Mono, monospace" text-anchor="end">3</text>
+            <text x="18" y="64" fill="#8A928C" font-size="10" font-family="JetBrains Mono, monospace" text-anchor="end">1.5</text>
+            <text x="18" y="110" fill="#8A928C" font-size="10" font-family="JetBrains Mono, monospace" text-anchor="end">0</text>
+            <polyline id="rirLine" points="60,45 160,75 268,106" fill="none" stroke="#F2B544"
+                      stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"/>
+            <circle cx="60" cy="45" r="4" fill="#F2B544"/>
+            <circle cx="160" cy="75" r="4" fill="#F2B544"/>
+            <circle cx="268" cy="106" r="5" fill="#F2B544"/>
+          </svg>
+        </div>
+        <div class="stallcard">
+          <div class="stall-flag">Stalled</div>
+          <div class="stall-body">Load has not moved while RIR fell 2 points. That is a fatigue plateau, not a strength ceiling. The same weight is simply costing more.</div>
+          <div class="rx">
+            <div>Drop to <span class="num">119 lb</span> for one session, then rebuild</div>
+            <div>Add one back-off set at RIR 3 instead of pushing the top set</div>
+          </div>
+        </div>
+      </section>
+
+      <section class="scene" data-scene="4">
+        <div class="eyebrow">Coach</div>
+        <div style="margin-top:14px;display:flex;flex-direction:column">
+          <div class="ask">Why has my incline press stalled?</div>
+          <div class="reply">
+            Over your last 3 matched sessions at <b>135 lb x 8</b>, RIR has dropped by <b>2 points</b>
+            and the trend is flagged declining. Your most recent set at that same weight was logged at
+            <b>0 RIR</b>, so you are grinding out reps you used to have in reserve.
+            <br><br>
+            Readiness only has 2 entries, so there is no trend to lean on there.
+          </div>
+          <div class="grounded"><span class="dot-good"></span> Every figure came from sets you logged</div>
+        </div>
+      </section>
+
+      <section class="scene close" data-scene="5">
+        <div class="mark" style="width:60px;height:60px;border-radius:14px">
+          <svg viewBox="0 0 24 24" fill="none" stroke="#12160B" stroke-width="2.1" stroke-linecap="round" style="width:34px;height:34px">
+            <path d="M4 9v6M7 7v10M17 7v10M20 9v6M7 12h10"/>
+          </svg>
+        </div>
+        <div class="wordmark" style="margin-top:2px">StrengthAI</div>
+        <div class="close-line">No exercise database. No dropdowns.<br><em>Just say what you did.</em></div>
+      </section>
+    </div>
+  </div>
+
+  <div class="side">
+    <header class="masthead">
+      <h1>Describe the lift. It finds the trend line.</h1>
+      <p>StrengthAI, a 30 second look</p>
+    </header>
+
+    <div class="caption">
+      <div class="k" id="capKey">Opening</div>
+      <div class="v" id="capVal">A training log that reads plain English and keeps the trend lines honest.</div>
+    </div>
+
+    <div class="transport">
+      <div class="bars" id="bars"></div>
+      <div class="controls">
+        <button class="btn" id="play" type="button">Pause</button>
+        <span class="counter" id="counter">01 / 06</span>
+        <button class="btn" id="replay" type="button">Replay</button>
+      </div>
+    </div>
+  </div>
+
+</div>
+
+<script>
+  (function () {
+    var reduced = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+
+    var SCENES = [
+      { ms: 3400, k: 'Opening',       v: 'A training log that reads plain English and keeps the trend lines honest.' },
+      { ms: 8200, k: 'The resolver',  v: 'A single arm extension done with a cable cuff is in nobody’s dropdown. Typed the way you would say it at the rack, it resolves to a tricep extension tagged cable, cuff and single arm, and gets its own trend line, and explains why the load will not match your two-arm numbers.' },
+      { ms: 5200, k: 'Logging a set', v: 'Weight, reps, and how close you were to failure. Nothing is ever guessed or filled in for you, and the rest timer starts itself.' },
+      { ms: 6000, k: 'The stall',     v: 'Same weight, same reps, rising effort. Three matched sessions is all it takes to tell a fatigue plateau from a strength ceiling.' },
+      { ms: 6400, k: 'The coach',     v: 'Ask it anything. Every number it quotes is one you logged, and when the data is thin it says so instead of guessing.' },
+      { ms: 4200, k: 'StrengthAI',    v: 'Built for the rack, not the spreadsheet.' }
+    ];
+
+    var TYPE_TEXT = 'single arm cuff tricep extension';
+
+    var stage = document.getElementById('stage');
+    var scenes = stage.querySelectorAll('.scene');
+    var barsWrap = document.getElementById('bars');
+    var capKey = document.getElementById('capKey');
+    var capVal = document.getElementById('capVal');
+    var counter = document.getElementById('counter');
+    var playBtn = document.getElementById('play');
+    var replayBtn = document.getElementById('replay');
+
+    var bars = SCENES.map(function (s, i) {
+      var b = document.createElement('button');
+      b.className = 'bar';
+      b.type = 'button';
+      b.setAttribute('aria-label', 'Scene ' + (i + 1) + ': ' + s.k);
+      b.appendChild(document.createElement('span'));
+      b.addEventListener('click', function () { go(i); });
+      barsWrap.appendChild(b);
+      return b;
+    });
+
+    var idx = 0, playing = !reduced, t0 = 0, raf = null;
+    var typeTimer = null, clockTimer = null;
+
+    function pad(n) { return (n < 10 ? '0' : '') + n; }
+
+    function paintBars(active, pct) {
+      bars.forEach(function (b, i) {
+        var fill = b.firstChild;
+        if (i < active) { fill.style.width = '100%'; }
+        else if (i === active) { fill.style.width = (pct * 100).toFixed(2) + '%'; }
+        else { fill.style.width = '0%'; }
+      });
+    }
+
+    function clearScene() {
+      if (typeTimer) { clearInterval(typeTimer); typeTimer = null; }
+      if (clockTimer) { clearInterval(clockTimer); clockTimer = null; }
+      document.getElementById('verdict').classList.remove('show');
+      document.getElementById('typed').textContent = '';
+      document.getElementById('row1').classList.remove('show');
+      document.getElementById('row2').classList.remove('show');
+      document.getElementById('rirPick').classList.remove('pick');
+      document.getElementById('restClock').textContent = '2:29';
+      var line = document.getElementById('rirLine');
+      line.style.transition = 'none';
+      line.style.strokeDasharray = '300';
+      line.style.strokeDashoffset = '300';
+    }
+
+    function runScene(i) {
+      if (i === 1) {
+        var typed = document.getElementById('typed');
+        if (reduced) {
+          typed.textContent = TYPE_TEXT;
+          document.getElementById('verdict').classList.add('show');
+          return;
+        }
+        var n = 0;
+        typeTimer = setInterval(function () {
+          n += 1;
+          typed.textContent = TYPE_TEXT.slice(0, n);
+          if (n >= TYPE_TEXT.length) {
+            clearInterval(typeTimer); typeTimer = null;
+            setTimeout(function () { document.getElementById('verdict').classList.add('show'); }, 520);
+          }
+        }, 62);
+      }
+
+      if (i === 2) {
+        if (reduced) {
+          document.getElementById('row1').classList.add('show');
+          document.getElementById('row2').classList.add('show');
+          document.getElementById('rirPick').classList.add('pick');
+          return;
+        }
+        setTimeout(function () { document.getElementById('rirPick').classList.add('pick'); }, 500);
+        setTimeout(function () { document.getElementById('row1').classList.add('show'); }, 900);
+        setTimeout(function () { document.getElementById('row2').classList.add('show'); }, 1600);
+        var secs = 149;
+        clockTimer = setInterval(function () {
+          secs -= 1;
+          if (secs < 0) { clearInterval(clockTimer); clockTimer = null; return; }
+          document.getElementById('restClock').textContent = Math.floor(secs / 60) + ':' + pad(secs % 60);
+        }, 1000);
+      }
+
+      if (i === 3) {
+        var line = document.getElementById('rirLine');
+        if (reduced) { line.style.strokeDashoffset = '0'; return; }
+        requestAnimationFrame(function () {
+          line.style.transition = 'stroke-dashoffset 1.5s cubic-bezier(.22,1,.36,1)';
+          line.style.strokeDashoffset = '0';
+        });
+      }
+    }
+
+    function show(i) {
+      clearScene();
+      scenes.forEach(function (s, n) { s.classList.toggle('is-on', n === i); });
+      capKey.textContent = SCENES[i].k;
+      capVal.textContent = SCENES[i].v;
+      counter.textContent = pad(i + 1) + ' / ' + pad(SCENES.length);
+      runScene(i);
+    }
+
+    function tick() {
+      if (!playing) return;
+      var elapsed = performance.now() - t0;
+      var pct = Math.min(1, elapsed / SCENES[idx].ms);
+      paintBars(idx, pct);
+      if (pct >= 1) {
+        if (idx < SCENES.length - 1) { go(idx + 1); return; }
+        playing = false;
+        playBtn.textContent = 'Replay';
+        paintBars(idx, 1);
+        return;
+      }
+      raf = requestAnimationFrame(tick);
+    }
+
+    function go(i) {
+      if (raf) cancelAnimationFrame(raf);
+      idx = i;
+      show(i);
+      t0 = performance.now();
+      paintBars(idx, 0);
+      if (playing) raf = requestAnimationFrame(tick);
+    }
+
+    playBtn.addEventListener('click', function () {
+      if (!playing && idx === SCENES.length - 1) { playing = true; playBtn.textContent = 'Pause'; go(0); return; }
+      playing = !playing;
+      playBtn.textContent = playing ? 'Pause' : 'Play';
+      if (playing) { t0 = performance.now(); raf = requestAnimationFrame(tick); }
+      else if (raf) cancelAnimationFrame(raf);
+    });
+
+    replayBtn.addEventListener('click', function () {
+      playing = !reduced;
+      playBtn.textContent = playing ? 'Pause' : 'Play';
+      go(0);
+    });
+
+    if (reduced) {
+      playBtn.textContent = 'Play';
+      show(0);
+      paintBars(0, 0);
+    } else {
+      go(0);
+    }
+  })();
+</script>
+
+</body>
+</html>

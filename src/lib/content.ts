@@ -1,6 +1,3 @@
-import strengthaiResolverTricep from '../images/strengthai/resolver-tricep.webp';
-import strengthaiResolverShoulderPress from '../images/strengthai/resolver-shoulder-press.webp';
-import strengthaiCoach from '../images/strengthai/coach.webp';
 
 export type NavLink = { label: string; href: string };
 
@@ -55,10 +52,9 @@ export type FeaturedProject = {
 export const FEATURED_PROJECTS: FeaturedProject[] = [
   {
     slug: 'strengthai',
-    status: { label: 'WEB APP · LIVE', accentClass: 'text-accent' },
+    status: { label: 'WEB APP · LIVE', accentClass: 'text-strength' },
     title: 'StrengthAI',
-    description:
-      'An AI-powered strength-training log that reads your own data and tells you when a lift has stalled, and why.',
+    description: "The perfect workout tracker. Every other one I've used sucked, so I made my own.",
     tags: ['React', 'Supabase', 'Claude API'],
     href: '/projects?project=strengthai',
   },
@@ -77,17 +73,22 @@ export type ProjectDemo =
       type: 'iframe';
       src: string;
       fallbackHref: string;
-      note: string;
       /** The embed's own canvas size; scaled to fit the card, or it crops. */
-      naturalWidth?: number;
-      naturalHeight?: number;
+      naturalWidth: number;
+      naturalHeight: number;
+      /** Sits above the embed; omit where the demo speaks for itself. */
+      note?: string;
+      /** Starts as soon as it scrolls into view, for demos that are quiet and cheap. */
+      autoPlay?: boolean;
+      /** The embedded page's own background, so the box matches before it paints. */
+      boxColor?: string;
       /** The embedded page's body margin, cropped off so no scrollbars appear. */
       embedInset?: number;
+      /** Follows the title on the play button; defaults to 'playable demo'. */
+      label?: string;
     }
   | {
       type: 'media';
-      /** 'phone' renders portrait captures in a row; 'wide' is the default. */
-      frame?: 'wide' | 'phone';
       video?: { src: string; poster?: string };
       images: { src: string; alt: string; caption?: string }[];
     };
@@ -114,27 +115,19 @@ export const PROJECTS: ProjectDetail[] = [
       { label: 'Try it live ↗', href: 'https://strength-ai.vercel.app' },
       { label: 'View code ↗', href: 'https://github.com/yutonydev/StrengthAI' },
     ],
-    // Screenshots, not the live app: it redirects to a login form.
+    // A trailer, not the live app: that redirects to a login form.
     demo: {
-      type: 'media',
-      frame: 'phone',
-      images: [
-        {
-          src: strengthaiResolverTricep,
-          alt: 'The exercise resolver turning "single arm cuffed tricep extension" into a Tricep Extension variant',
-          caption: 'Describe a lift how you would say it. No dropdowns, no exercise database.',
-        },
-        {
-          src: strengthaiResolverShoulderPress,
-          alt: 'The resolver classifying "plated loaded shoulder press machine" as a machine Shoulder Press variant',
-          caption: 'Each phrasing resolves to its own variant, so trend lines never merge.',
-        },
-        {
-          src: strengthaiCoach,
-          alt: 'The coach answering a question about reps in reserve using logged sets',
-          caption: 'The coach answers from sets you logged, and says what it cannot tell yet.',
-        },
-      ],
+      type: 'iframe',
+      src: '/strengthai-trailer.html',
+      fallbackHref: '/strengthai-trailer.html',
+      autoPlay: true,
+      label: 'trailer',
+      boxColor: '#0A0B0A',
+      // The widest the card's box ever gets, so it always scales to fill rather than sit in bars.
+      naturalWidth: 700,
+      naturalHeight: 557,
+      // The trailer resets the body margin, so there is nothing to crop.
+      embedInset: 0,
     },
   },
   {

@@ -1,9 +1,4 @@
-/**
- * Lets a page tell the loading cover it has finished its own startup work.
- *
- * Pages with nothing heavy to wait for never signal; the cover falls back to
- * the first painted frame.
- */
+/** Lets a page tell the loading cover its startup work is done; pages with none never signal. */
 let ready = false;
 const listeners = new Set<() => void>();
 

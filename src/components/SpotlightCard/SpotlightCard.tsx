@@ -53,12 +53,8 @@ const SpotlightCard: React.FC<SpotlightCardProps> = ({
       onBlur={handleBlur}
       onMouseEnter={handleMouseEnter}
       onMouseLeave={handleMouseLeave}
-      // Only structural classes here. This shipped with a hardcoded dark
-      // surface (border-neutral-800 bg-neutral-900), which is unreadable behind
-      // this site's dark text — and Tailwind resolves conflicting utilities by
-      // stylesheet order, not by class-attribute order, so a caller's
-      // background could not reliably override it. Surface and padding are the
-      // caller's to set.
+      // Structural classes only: Tailwind resolves conflicts by stylesheet
+      // order, so the shipped hardcoded surface could not be overridden here.
       className={`relative overflow-hidden ${className}`}
     >
       <div

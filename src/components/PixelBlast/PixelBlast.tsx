@@ -416,12 +416,9 @@ const PixelBlast: React.FC<PixelBlastProps> = ({
     if (!container) return;
     speedRef.current = speed;
 
-    // Pointer input is bound to window rather than to the canvas. As a
-    // full-viewport background this sits beneath the page content, so the
-    // canvas never receives pointer events itself and the click/ripple
-    // response would never fire. Reading state from threeRef at event time
-    // (instead of closing over it) keeps these handlers valid across prop
-    // changes that reuse the existing renderer.
+    // Bound to window, not the canvas: as a background it sits under the page
+    // and never receives pointer events itself. Reading threeRef at event time
+    // keeps these valid across prop changes that reuse the renderer.
     const canvasPixels = (e: PointerEvent, el: HTMLCanvasElement) => {
       const rect = el.getBoundingClientRect();
       return {
@@ -585,8 +582,7 @@ const PixelBlast: React.FC<PixelBlastProps> = ({
         composer.addPass(noisePass);
       }
       if (composer) composer.setSize(renderer.domElement.width, renderer.domElement.height);
-      // Pointer handling lives at effect scope (see handlePointerDown /
-      // handlePointerMove above) so it survives prop changes that don't
+      // Handlers live at effect scope so they survive prop changes that do not
       // reinitialise the renderer.
       let raf = 0;
       const animate = () => {
@@ -658,9 +654,8 @@ const PixelBlast: React.FC<PixelBlastProps> = ({
     }
     prevConfigRef.current = cfg;
     return () => {
-      // Always detach, including on the reinit early-return below: these live
-      // on window now, so they outlive the canvas, and every effect run adds a
-      // fresh pair.
+      // Always detach, including on the reinit early-return: these live on
+      // window, outlive the canvas, and every effect run adds a fresh pair.
       window.removeEventListener('pointerdown', handlePointerDown);
       window.removeEventListener('pointermove', handlePointerMove);
 

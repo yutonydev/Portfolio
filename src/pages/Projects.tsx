@@ -9,11 +9,7 @@ import { PROJECTS, type ProjectDetail } from '../lib/content';
 /** Width of the embed box's border, in px — kept out of the scale maths. */
 const BOX_BORDER = 1;
 
-/** Shared by a live element and its stand-in, so heights cannot drift. */
-const LIVE_EMBED_HEIGHT = 'h-[clamp(560px,78vh,900px)]';
 const PREVIEW_TILE = 'block h-[200px] w-full rounded-2xl border border-border-soft';
-/** Portrait captures keep their own aspect, so a row of them lines up exactly. */
-const PHONE_TILE = 'block aspect-[436/918] w-full rounded-2xl border border-border-soft';
 
 /** The overshoot in the curve is what makes it bounce rather than glide. */
 const TILE_HOVER =
@@ -23,10 +19,7 @@ const TILE_HOVER =
 
 type Shot = { src: string; alt: string; caption?: string };
 
-/**
- * Portalled to the body: each card carries a translate3d, and a transformed
- * ancestor is the containing block for position: fixed.
- */
+/** Portalled to the body: a transformed ancestor is the containing block for position: fixed. */
 function Lightbox({
   shots,
   index,
@@ -130,19 +123,47 @@ function ScaledEmbed({
   title,
   width,
   height,
-  inset = 0
+  inset = 0,
+  autoPlay = false,
+  // Matches the embedded page, so the box is not a black flash before it paints.
+  boxColor = '#000'
 }: {
   src: string;
   title: string;
   width: number;
   height: number;
   inset?: number;
+  autoPlay?: boolean;
+  boxColor?: string;
 }) {
   const outer = useRef<HTMLDivElement>(null);
   const frame = useRef<HTMLIFrameElement>(null);
-  const [scale, setScale] = useState(1);
-  // Click to start; unmounting the frame is the only cross-origin mute.
-  const [running, setRunning] = useState(false);
+  const [fit, setFit] = useState({ scale: 1, offset: 0 });
+  const { scale, offset } = fit;
+  // Unmounting the frame is the only cross-origin mute. Without an observer to
+  // wait on, an autoplaying embed starts now: it has no play button to fall back on.
+  const [running, setRunning] = useState(() => autoPlay && typeof IntersectionObserver === 'undefined');
+  // A cover fades off once it paints; fading the frame itself in would deprioritise
+  // its rendering and delay that paint.
+  const [loaded, setLoaded] = useState(false);
+
+  // Autoplaying ones still wait for the viewport, so a card further down the
+  // deck does not load its embed while someone is reading the top of the page.
+  useEffect(() => {
+    const el = outer.current;
+    if (!autoPlay || !el || running) return;
+    const observer = new IntersectionObserver(
+      entries => {
+        if (entries.some(entry => entry.isIntersecting)) {
+          setRunning(true);
+          observer.disconnect();
+        }
+      },
+      { rootMargin: '200px' }
+    );
+    observer.observe(el);
+    return () => observer.disconnect();
+  }, [autoPlay, running]);
 
   useLayoutEffect(() => {
     const el = outer.current;
@@ -150,7 +171,14 @@ function ScaledEmbed({
 
     // clientWidth, not the rect: the deck's 3D transform shrinks the rect.
     // Measured up front as well, or it stays unscaled until a resize.
-    const measure = () => setScale((el.clientWidth - BOX_BORDER * 2) / (width + inset * 2));
+    const measure = () => {
+      const box = el.clientWidth - BOX_BORDER * 2;
+      const natural = width + inset * 2;
+      // Never past 1:1. Anything narrower than the card would be magnified into
+      // a soft, oversized version of itself, and grow the box to match.
+      const next = Math.min(box / natural, 1);
+      setFit({ scale: next, offset: Math.max(0, (box - natural * next) / 2) });
+    };
     measure();
 
     const observer = new ResizeObserver(measure);
@@ -166,9 +194,18 @@ function ScaledEmbed({
     <div ref={outer} className="w-full">
       {/* Full width: no fractional centring to round unevenly. */}
       <div
-        className="relative w-full overflow-hidden rounded-2xl border border-border-soft bg-black"
-        style={{ height: (height + inset * 2) * scale + BOX_BORDER * 2 }}
+        className="relative w-full overflow-hidden rounded-2xl border border-border-soft"
+        style={{ height: (height + inset * 2) * scale + BOX_BORDER * 2, background: boxColor }}
       >
+        {running && (
+          // Holds the box in the embed's own colour until it has painted, then
+          // fades off, so there is no blank flash and nothing pops into place.
+          <div
+            aria-hidden
+            className="pointer-events-none absolute inset-0 z-[1] transition-opacity duration-300"
+            style={{ background: boxColor, opacity: loaded ? 0 : 1 }}
+          />
+        )}
         {running ? (
           <iframe
             ref={frame}
@@ -180,10 +217,11 @@ function ScaledEmbed({
             scrolling="no"
             // Key events need the frame itself focused.
             allow="autoplay; fullscreen; gamepad; keyboard-map"
-            className="absolute left-0 top-0 border-0"
-            style={{ transform: `scale(${scale})`, transformOrigin: '0 0' }}
+            onLoad={() => setLoaded(true)}
+            className="absolute top-0 border-0"
+            style={{ left: offset, transform: `scale(${scale})`, transformOrigin: '0 0' }}
           />
-        ) : (
+        ) : autoPlay ? null : (
           <button
             type="button"
             onClick={() => setRunning(true)}
@@ -199,13 +237,13 @@ function ScaledEmbed({
         )}
       </div>
 
-      {running && (
+      {running && !autoPlay && (
         <button
           type="button"
           onClick={() => setRunning(false)}
           className="mt-3 rounded-full border border-border-soft px-4 py-2 font-sans text-sm font-bold text-ink-soft transition-colors hover:border-accent hover:text-accent"
         >
-          ■ Stop game
+          ■ Stop
         </button>
       )}
     </div>
@@ -215,7 +253,6 @@ function ScaledEmbed({
 /** `isActive` gates the costly parts of the demo, not the space they take. */
 function ProjectCard({ project, isActive }: { project: ProjectDetail; isActive: boolean }) {
   // Hoisted: the map callback below loses the narrowing to the media variant.
-  const phoneFrame = project.demo.type === 'media' && project.demo.frame === 'phone';
   const shots = project.demo.type === 'media' ? project.demo.images : [];
   const [zoomed, setZoomed] = useState<number | null>(null);
 
@@ -257,30 +294,18 @@ function ProjectCard({ project, isActive }: { project: ProjectDetail; isActive: 
       {/* On every card, so heights hold; stand-ins replace the costly parts. */}
       {project.demo.type === 'iframe' ? (
           <div className="border-t border-border bg-surface-alt p-[clamp(20px,3vw,28px)]">
-            <div className="mb-3 font-mono text-xs text-ink-softer">{project.demo.note}</div>
-            {project.demo.naturalWidth && project.demo.naturalHeight ? (
-              <ScaledEmbed
-                src={project.demo.src}
-                title={`${project.title} playable demo`}
-                width={project.demo.naturalWidth}
-                height={project.demo.naturalHeight}
-                inset={project.demo.embedInset}
-              />
-            ) : (
-              // Dark backing; height on the box so the empty version keeps it.
-              <div
-                className={`${LIVE_EMBED_HEIGHT} overflow-hidden rounded-2xl border border-border-soft bg-black`}
-              >
-                {isActive && (
-                  <iframe
-                    src={project.demo.src}
-                    className="block h-full w-full border-0"
-                    loading="lazy"
-                    title={`${project.title} live app`}
-                  />
-                )}
-              </div>
+            {project.demo.note && (
+              <div className="mb-3 font-mono text-xs text-ink-softer">{project.demo.note}</div>
             )}
+            <ScaledEmbed
+              src={project.demo.src}
+              title={`${project.title} ${project.demo.label ?? 'playable demo'}`}
+              width={project.demo.naturalWidth}
+              height={project.demo.naturalHeight}
+              inset={project.demo.embedInset}
+              autoPlay={project.demo.autoPlay}
+              boxColor={project.demo.boxColor}
+            />
             <div className="mt-2.5 font-sans text-[13px] text-ink-softer">
               If the embed doesn't load,{' '}
               <a href={project.demo.fallbackHref} target="_blank" rel="noopener" className="text-accent">
@@ -290,11 +315,7 @@ function ProjectCard({ project, isActive }: { project: ProjectDetail; isActive: 
           </div>
         ) : (
           <div className="border-t border-border p-[clamp(20px,3vw,28px)]">
-            <div
-              className={
-                phoneFrame ? 'grid grid-cols-3 gap-3' : 'grid grid-cols-1 gap-4 sm:grid-cols-2'
-              }
-            >
+            <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
               {project.demo.video &&
                 (isActive ? (
                   <video
@@ -313,7 +334,6 @@ function ProjectCard({ project, isActive }: { project: ProjectDetail; isActive: 
                   <div className={`${PREVIEW_TILE} bg-black`} />
                 ))}
               {project.demo.images.map((image, i) => {
-                const tile = phoneFrame ? PHONE_TILE : PREVIEW_TILE;
                 return (
                   <figure key={image.src} className="m-0">
                     {isActive ? (
@@ -327,11 +347,11 @@ function ProjectCard({ project, isActive }: { project: ProjectDetail; isActive: 
                           src={image.src}
                           alt={image.alt}
                           loading="lazy"
-                          className={`${tile} ${TILE_HOVER} object-cover`}
+                          className={`${PREVIEW_TILE} ${TILE_HOVER} object-cover`}
                         />
                       </button>
                     ) : (
-                      <div className={`${tile} bg-black`} />
+                      <div className={`${PREVIEW_TILE} bg-black`} />
                     )}
                     {image.caption && (
                       <figcaption className="mt-2 font-sans text-[12px] leading-[1.45] text-ink-softer">

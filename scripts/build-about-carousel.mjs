@@ -1,7 +1,4 @@
-// Builds the About carousel images from the phone captures in
-// src/imported about images and gifs/ (~220MB) down to 480x640.
-// GIFs become animated WebP; tiled HEIC is read from .jpg copies beside it.
-//
+// Builds the About carousel images from the originals in src/imported about images and gifs/.
 // Run: node scripts/build-about-carousel.mjs
 
 import sharp from 'sharp';
@@ -21,10 +18,7 @@ const H = 640;
 
 mkdirSync(p(OUT), { recursive: true });
 
-/**
- * `zoom` narrows the frame before the 3:4 crop; `focusX`/`focusY` aim it.
- * `fps` re-times an animated source through ffmpeg, which sharp cannot do.
- */
+/** `zoom` narrows the frame before the 3:4 crop, `focusX`/`focusY` aim it, `fps` re-times animation. */
 const ITEMS = [
   { src: new URL('about me image.jpg', SRC), name: 'santa-cruz.jpg' },
   { src: new URL('IMG_0036.JPG', IMPORTED), name: 'summit-lookout.jpg' },

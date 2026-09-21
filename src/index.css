@@ -18,6 +18,8 @@
   --color-accent: oklch(74% 0.13 260);
   --color-accent-deep: oklch(82% 0.12 260);
   --color-live: oklch(78% 0.17 150);
+  /* StrengthAI's own accent, matching its trailer. */
+  --color-strength: #a8c9a2;
   --color-game: oklch(75% 0.14 45);
 
   /* Inverted panels: resume banner, contact success. */

@@ -1,6 +1,4 @@
-// Generates the lanyard card faces, strap tile and favicons from src/images/.
-// Face sizes come from card.glb's atlas (1678x1677) and its UV rects.
-//
+// Generates the lanyard card faces, strap tile and favicons, sized from card.glb's atlas.
 // Run: node scripts/build-card-images.mjs
 import sharp from 'sharp';
 import { readFileSync } from 'node:fs';

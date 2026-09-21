@@ -8,9 +8,7 @@ type GradientHeadingProps = {
 export default function GradientHeading({ children, className = '' }: GradientHeadingProps) {
   return (
     <h1
-      // Gradient stops read from the theme tokens rather than literal colours:
-      // the shipped ones were near-black, which disappears against a dark
-      // background.
+      // Theme tokens, not the shipped literals: those were near-black on a dark page.
       style={{
         backgroundImage:
           'linear-gradient(90deg, var(--color-ink), var(--color-accent), var(--color-ink))',

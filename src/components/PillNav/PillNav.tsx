@@ -41,9 +41,8 @@ const PillNav: React.FC<PillNavProps> = ({
   const hamburgerRef = useRef<HTMLButtonElement | null>(null);
   const mobileMenuRef = useRef<HTMLDivElement | null>(null);
   const navItemsRef = useRef<HTMLDivElement | null>(null);
-  // The intro plays once per mount. The layout effect re-runs whenever the
-  // items change, and replaying the reveal on a route change dragged the pills
-  // sideways under a stationary cursor, firing hover on each one it passed.
+  // Once per mount: replaying the reveal on a route change drags the pills
+  // under a stationary cursor, firing hover on each one they pass.
   const introPlayedRef = useRef(false);
 
   useEffect(() => {
@@ -115,14 +114,9 @@ const PillNav: React.FC<PillNavProps> = ({
 
       if (navItems) {
         introPlayedRef.current = true;
-        // Measure first, then animate to that pixel width and hand control back
-        // to the stylesheet on completion. Animating to 'auto' left the pills
-        // collapsed: GSAP resolves the target when the tween starts, and the
-        // width it read back was the 0 that had just been set — so it animated
-        // 0 to 0 and pinned an inline width of 0, hiding the nav entirely.
-        // Clear any width left by a previous run before measuring. React runs
-        // effects twice in development, and without this the second pass would
-        // measure the 0 the first pass had just set, then animate 0 to 0.
+        // Measure, then animate to that pixel width: animating to 'auto' makes
+        // GSAP read back the 0 just set and pin an inline width of 0. Clearing
+        // a previous run's width first stops double-invoked effects doing the same.
         gsap.set(navItems, { width: 'auto', overflow: 'visible' });
         const targetWidth = navItems.getBoundingClientRect().width;
 
