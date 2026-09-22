@@ -21,6 +21,8 @@
   /* StrengthAI's own accent, matching its trailer. */
   --color-strength: #a8c9a2;
   --color-game: oklch(75% 0.14 45);
+  /* BubbleMage's own accent. */
+  --color-bubblemage: oklch(72% 0.2 355);
 
   /* Inverted panels: resume banner, contact success. */
   --color-panel: oklch(28% 0.02 260);

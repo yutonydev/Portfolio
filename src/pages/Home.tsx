@@ -109,12 +109,25 @@ export default function Home() {
                 className="h-full rounded-[20px] border border-border bg-surface p-8 shadow-[0_1px_2px_rgba(0,0,0,0.04)]"
                 spotlightColor="rgba(111, 116, 232, 0.45)"
               >
-                <div
-                  className={`mb-3.5 font-mono text-xs font-semibold tracking-[0.05em] ${project.status.accentClass}`}
-                >
-                  {project.status.label}
+                <div className="flex items-start justify-between gap-4">
+                  <div>
+                    <div
+                      className={`mb-3.5 font-mono text-xs font-semibold tracking-[0.05em] ${project.status.accentClass}`}
+                    >
+                      {project.status.label}
+                    </div>
+                    <h3 className="mb-2.5 font-sans text-[23px] font-extrabold text-ink">{project.title}</h3>
+                  </div>
+                  {project.icon && (
+                    <img
+                      src={project.icon}
+                      alt=""
+                      width={56}
+                      height={56}
+                      className="size-14 shrink-0 rounded-[14px] shadow-[0_2px_8px_rgba(0,0,0,0.12)]"
+                    />
+                  )}
                 </div>
-                <h3 className="mb-2.5 font-sans text-[23px] font-extrabold text-ink">{project.title}</h3>
                 <p className="mb-[18px] font-sans text-[15px] leading-[1.55] text-ink-soft">{project.description}</p>
                 <div className="flex flex-wrap gap-2">
                   {project.tags.map((tag) => (

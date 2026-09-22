@@ -47,6 +47,8 @@ export type FeaturedProject = {
   description: string;
   tags: Tag[];
   href: string;
+  /** App-store style icon beside the title. */
+  icon?: string;
 };
 
 export const FEATURED_PROJECTS: FeaturedProject[] = [
@@ -57,14 +59,16 @@ export const FEATURED_PROJECTS: FeaturedProject[] = [
     description: "The perfect workout tracker. Every other one I've used sucked, so I made my own.",
     tags: ['React', 'Supabase', 'Claude API'],
     href: '/projects?project=strengthai',
+    icon: '/strengthai-icon.webp',
   },
   {
     slug: 'bubblemage',
-    status: { label: 'GAME · STEAM', accentClass: 'text-game' },
+    status: { label: 'GAME · STEAM', accentClass: 'text-bubblemage' },
     title: 'BubbleMage',
     description: 'An open world fantasy game built in Unity with a five-person team, headed to Steam.',
     tags: ['Unity', 'C#', 'Team Project'],
     href: '/projects?project=bubblemage',
+    icon: '/bubblemage-icon.webp',
   },
 ];
 
@@ -132,7 +136,7 @@ export const PROJECTS: ProjectDetail[] = [
   },
   {
     slug: 'bubblemage',
-    status: { label: 'GAME · STEAM', accentClass: 'text-game' },
+    status: { label: 'GAME · STEAM', accentClass: 'text-bubblemage' },
     title: 'BubbleMage',
     description:
       'An open world fantasy game built in Unity with a five-person team, on its way to Steam. My focus was gameplay systems and C# tooling, working alongside teammates on art, audio, and level design.',
