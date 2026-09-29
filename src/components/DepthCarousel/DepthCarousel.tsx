@@ -1,5 +1,4 @@
-// Vendored from reactbits. Two departures: type-only imports, and a first
-// layout that runs before paint.
+// Vendored from reactbits, with type-only imports and a synchronous first layout.
 import {
   useCallback,
   useEffect,

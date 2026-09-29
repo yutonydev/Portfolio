@@ -51,9 +51,7 @@
     gap: 28px;
   }
 
-  /* The scenes are laid out at 400x700; the frame shows them smaller without
-     reflowing any of it, which keeps the whole thing short enough to sit on
-     screen beside its own captions. */
+  /* Scenes are laid out at 400x700 and scaled down, so they fit beside captions. */
   .stage-frame { flex: none; width: 300px; height: 525px; }
   .side { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 18px; }
 
@@ -279,8 +277,7 @@
 
   .caption {
     width: 100%;
-    /* Fits the longest scene's line, so the transport below does not jump as
-       captions change and the page keeps one height when embedded. */
+    /* Sized to the longest caption, so the transport and page height don't jump. */
     min-height: 150px;
     display: flex; flex-direction: column; gap: 5px;
   }

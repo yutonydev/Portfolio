@@ -13,8 +13,7 @@ const FADE_MS = 400;
 
 const SCROLL_KEYS = new Set([' ', 'PageUp', 'PageDown', 'Home', 'End', 'ArrowUp', 'ArrowDown']);
 
-// Not 1: a fully opaque cover lets the browser skip rasterising the page
-// behind it, then drops ~150ms of frames doing it all at the reveal.
+// Not 1: a fully opaque cover makes the reveal rasterise the whole page at once.
 const COVER_OPACITY = 0.99;
 
 export default function LoadingGate() {

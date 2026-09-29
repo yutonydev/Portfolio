@@ -29,7 +29,7 @@ const PHOTOS = [
   { image: nightOut, alt: 'Walking outside at night in a hoodie' }
 ];
 
-/** Renders at 280x373: the carousel bottoms out at its 0.4 scale floor in a column this narrow. */
+/** Renders at 280x373, the carousel's 0.4 scale floor in this narrow column. */
 const CARD_WIDTH = 700;
 const CARD_HEIGHT = 933;
 
@@ -44,9 +44,9 @@ export default function About() {
             cardWidth={CARD_WIDTH}
             cardHeight={CARD_HEIGHT}
             // Playground values doubled: 300px at scale 1 there, 240px at 0.4 here.
-            radius={80} /* 40 */
+            radius={80}
             tint={PIXEL_PURPLE}
-            depth={260} /* 130 */
+            depth={260}
             // Past the playground's 45: the Z-shrink eats most of the offset.
             spread={175}
             tilt={0}
@@ -56,7 +56,7 @@ export default function About() {
             // Three: more reach must clear the bio, and 4-5 sat at the brightness floor.
             visibleCards={3}
             falloff={0.26}
-            blur={8} /* 4 */
+            blur={8}
             duration={200}
             // Dots only; arrows would sit on the card in a column this narrow.
             showControls={false}

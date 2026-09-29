@@ -1,4 +1,4 @@
-/** Lets a page tell the loading cover its startup work is done; pages with none never signal. */
+/** Pages call this to lift the loading cover once their startup work is done. */
 let ready = false;
 const listeners = new Set<() => void>();
 

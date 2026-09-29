@@ -1,5 +1,4 @@
-// Builds the About carousel images from the originals in src/imported about images and gifs/.
-// Run: node scripts/build-about-carousel.mjs
+// Builds the About carousel images: node scripts/build-about-carousel.mjs
 
 import sharp from 'sharp';
 import { execFileSync } from 'node:child_process';
@@ -18,7 +17,7 @@ const H = 640;
 
 mkdirSync(p(OUT), { recursive: true });
 
-/** `zoom` narrows the frame before the 3:4 crop, `focusX`/`focusY` aim it, `fps` re-times animation. */
+/** zoom tightens the 3:4 crop, focusX/focusY aim it, fps re-times animations. */
 const ITEMS = [
   { src: new URL('about me image.jpg', SRC), name: 'santa-cruz.jpg' },
   { src: new URL('IMG_0036.JPG', IMPORTED), name: 'summit-lookout.jpg' },

@@ -38,8 +38,7 @@ declare module '@react-three/fiber' {
 const BLANK_PIXEL =
   'data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mNk+M9QDwADhgGAWjR9awAAAABJRU5ErkJggg==';
 
-// Front face maps to the left half of the atlas and back to the right, down to
-// 0.7572, the mesh's real max V.
+// Front face is the atlas's left half, back the right; V tops out at 0.7572.
 const FRONT_UV_RECT = { x: 0, y: 0, w: 0.5, h: 0.7572 };
 const BACK_UV_RECT = { x: 0.5, y: 0, w: 0.5, h: 0.7572 };
 
@@ -58,7 +57,7 @@ const CARD_JOINT_REACH = 1.45;
 /** Where the strap hangs from once it has settled, in world space. */
 const RIG_ANCHOR: [number, number, number] = [0, 4, 0];
 
-/** How much heavier the rig falls while dropping in, since a slack rope leaves the card behind the anchor. */
+/** Extra gravity while dropping in, so the card keeps up with the anchor. */
 const DROP_IN_GRAVITY_SCALE = 3;
 
 const halfFovTan = (fov: number) => Math.tan((fov * Math.PI) / 180 / 2);
@@ -98,7 +97,7 @@ function CameraRig({
   return null;
 }
 
-/** Uploads textures and links shaders one per frame before the loop starts, so the first render doesn't freeze the page. */
+/** Warms textures and shaders one per frame, so the first render doesn't freeze. */
 function WarmUp({ onReady }: { onReady: (ready: boolean) => void }) {
   const { gl, scene, camera } = useThree();
 
@@ -143,8 +142,7 @@ function WarmUp({ onReady }: { onReady: (ready: boolean) => void }) {
         await nextFrame();
       }
 
-      // compile() misses the program the strap's material actually renders with,
-      // so draw one hidden frame and let the loop reuse what it builds.
+      // compile() misses the strap's real program, so draw one hidden frame to build it.
       if (cancelled) return;
       gl.render(scene, camera);
       await nextFrame();
@@ -183,7 +181,7 @@ interface LanyardProps {
   dropFrom?: number;
   /** Degrees off vertical the rig starts at, giving the drop a swing. */
   dropTilt?: number;
-  /** World units above its resting place the rig falls from, 'auto' to clear the canvas, or null to hang in place. */
+  /** Drop height in world units; 'auto' clears the canvas, null hangs in place. */
   dropInFrom?: number | 'auto' | null;
   /** Seconds the rig takes to travel down into place. */
   dropInDuration?: number;
@@ -214,8 +212,7 @@ export default function Lanyard({
   const [isMobile, setIsMobile] = useState<boolean>(() => typeof window !== 'undefined' && window.innerWidth < 768);
   const [warm, setWarm] = useState(false);
 
-  // Stable identity: WarmUp's effect depends on it, so a fresh callback each
-  // render would restart the warm-up.
+  // Stable identity, or WarmUp's effect would restart the warm-up every render.
   const onReadyRef = useRef(onReady);
   useEffect(() => {
     onReadyRef.current = onReady;
@@ -363,8 +360,7 @@ function Band({
     () => typeof window !== 'undefined' && window.matchMedia('(prefers-reduced-motion: reduce)').matches
   );
 
-  // Held from mount on, because the bodies are created at this offset and a
-  // resize mid-fall must not move it under them.
+  // Fixed at mount: the bodies are created at this offset, so resizes can't move it.
   const [dropInOffset] = useState(() => {
     if (prefersReducedMotion || dropInFrom == null) return 0;
     if (typeof dropInFrom === 'number') return Math.max(0, dropInFrom);
@@ -478,8 +474,7 @@ function Band({
   const [dragged, drag] = useState<false | THREE.Vector3>(false);
   const [hovered, hover] = useState(false);
 
-  // Held across renders: R3F rebuilds the material when an args entry changes by
-  // reference, and relinking its shader blocks for ~70ms.
+  // Held across renders: a new args reference rebuilds the material (~70ms relink).
   const meshLineArgs = useMemo(
     () => [{ resolution: new THREE.Vector2(1000, isMobile ? 2000 : 1000) }] as [{ resolution: THREE.Vector2 }],
     [isMobile]

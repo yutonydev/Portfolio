@@ -1,5 +1,4 @@
-// Generates the lanyard card faces, strap tile and favicons, sized from card.glb's atlas.
-// Run: node scripts/build-card-images.mjs
+// Builds the lanyard card faces, strap tile and favicons: node scripts/build-card-images.mjs
 import sharp from 'sharp';
 import { readFileSync } from 'node:fs';
 import { fileURLToPath } from 'node:url';
@@ -19,8 +18,7 @@ const BACK_H = Math.round(0.757 * ATLAS_H); // 1269
 const INK = '#1a1d29';
 const BORDER = 38; // white frame around the photo, in face pixels
 
-// ---------- front: photo in a white frame ----------
-// lanyard-photo.jpg is the decoded HEIC; sharp cannot read HEIC.
+// Front: photo in a white frame, from the decoded JPEG since sharp can't read HEIC.
 const photo = await sharp(p(new URL('lanyard-photo.jpg', SRC)))
   .resize({
     width: FACE_W - BORDER * 2,
@@ -40,7 +38,7 @@ await sharp({
 
 console.log(`card-front.jpg  ${FACE_W}x${FRONT_H}`);
 
-// ---------- back: tech logos on white ----------
+// Back: tech logos on white.
 const LOGOS = ['github', 'unity', 'cplusplus', 'react', 'python', 'supabase'];
 const COLS = 2;
 const ROWS = 3;
@@ -84,8 +82,7 @@ await sharp({
 
 console.log(`card-back.png   ${FACE_W}x${BACK_H}  (${LOGOS.join(', ')})`);
 
-// ---------- lanyard strap ----------
-// One tile of the print, 2:1, repeated at a fixed world length.
+// Lanyard strap: one 2:1 tile of the print, repeated at a fixed world length.
 const STRAP_W = 512;
 const STRAP_H = 256;
 
@@ -108,8 +105,7 @@ await sharp(
 
 console.log(`strap-ty.png    ${STRAP_W}x${STRAP_H}`);
 
-// ---------- favicon ----------
-// A TY monogram, baked to PNG so glyphs cannot shift with browser fonts.
+// Favicon: a TY monogram baked to PNG, so glyphs can't shift with browser fonts.
 const PUB = new URL('../public/', import.meta.url);
 const ICON_RES = 512;
 const ICON_BG = '#6f74e8'; // the same purple as the pixels and card spotlights

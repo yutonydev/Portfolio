@@ -127,7 +127,7 @@ export const PROJECTS: ProjectDetail[] = [
       autoPlay: true,
       label: 'trailer',
       boxColor: '#0A0B0A',
-      // The widest the card's box ever gets, so it always scales to fill rather than sit in bars.
+      // The card's widest box, so it always scales to fill instead of letterboxing.
       naturalWidth: 700,
       naturalHeight: 557,
       // The trailer resets the body margin, so there is nothing to crop.
@@ -206,8 +206,7 @@ export const PROJECTS: ProjectDetail[] = [
     ],
     demo: {
       type: 'iframe',
-      // itch's embed page: framing the build host serves an anti-hotlink notice.
-      // The id is per upload, so re-uploading breaks this; the fallback covers it.
+      // itch's per-upload embed page (the build host blocks framing); re-uploads break it.
       src: 'https://itch.io/embed-upload/19017111?color=0b0d12',
       fallbackHref: 'https://yutony03.itch.io/afterimage',
       note: 'PLAY IT HERE: press play, then click the game to use the keyboard',

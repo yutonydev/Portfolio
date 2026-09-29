@@ -62,8 +62,7 @@
     background: linear-gradient(180deg, transparent, #8f93ee 40%, #8f93ee 60%, transparent);
   }
 
-  /* Firefox only: Chrome discards every ::-webkit-scrollbar rule above if it
-     sees these standard properties, which flattens the gradient. */
+  /* Firefox only: Chrome drops the ::-webkit-scrollbar rules if it sees these. */
   @supports not selector(::-webkit-scrollbar) {
     :root {
       scrollbar-width: thin;

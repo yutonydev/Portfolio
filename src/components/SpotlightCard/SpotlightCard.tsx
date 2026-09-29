@@ -53,8 +53,7 @@ const SpotlightCard: React.FC<SpotlightCardProps> = ({
       onBlur={handleBlur}
       onMouseEnter={handleMouseEnter}
       onMouseLeave={handleMouseLeave}
-      // Structural classes only: Tailwind resolves conflicts by stylesheet
-      // order, so the shipped hardcoded surface could not be overridden here.
+      // Structural classes only, so a caller's surface classes can override them.
       className={`relative overflow-hidden ${className}`}
     >
       <div

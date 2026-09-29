@@ -41,8 +41,7 @@ const PillNav: React.FC<PillNavProps> = ({
   const hamburgerRef = useRef<HTMLButtonElement | null>(null);
   const mobileMenuRef = useRef<HTMLDivElement | null>(null);
   const navItemsRef = useRef<HTMLDivElement | null>(null);
-  // Once per mount: replaying the reveal on a route change drags the pills
-  // under a stationary cursor, firing hover on each one they pass.
+  // Once per mount: replaying on route change drags pills under the cursor, firing hover.
   const introPlayedRef = useRef(false);
 
   useEffect(() => {
@@ -114,9 +113,7 @@ const PillNav: React.FC<PillNavProps> = ({
 
       if (navItems) {
         introPlayedRef.current = true;
-        // Measure, then animate to that pixel width: animating to 'auto' makes
-        // GSAP read back the 0 just set and pin an inline width of 0. Clearing
-        // a previous run's width first stops double-invoked effects doing the same.
+        // Measure, then animate to that px width; animating to 'auto' pins a width of 0.
         gsap.set(navItems, { width: 'auto', overflow: 'visible' });
         const targetWidth = navItems.getBoundingClientRect().width;
 
@@ -231,8 +228,7 @@ const PillNav: React.FC<PillNavProps> = ({
     ['--pill-gap']: '3px'
   } as React.CSSProperties;
 
-  // Positioning is the caller's: this shipped absolutely positioned at the top
-  // of the viewport, which cannot sit inside an existing sticky header.
+  // Positioned by the caller, so it can sit inside the sticky header.
   return (
     <div className="w-full md:w-auto">
       <nav
@@ -240,9 +236,6 @@ const PillNav: React.FC<PillNavProps> = ({
         aria-label="Primary"
         style={cssVars}
       >
-        {/* The logo circle this shipped with is removed — the site uses a text
-            wordmark beside the nav instead. */}
-
         <div
           ref={navItemsRef}
           className="relative items-center rounded-full hidden md:flex"

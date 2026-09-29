@@ -416,9 +416,7 @@ const PixelBlast: React.FC<PixelBlastProps> = ({
     if (!container) return;
     speedRef.current = speed;
 
-    // Bound to window, not the canvas: as a background it sits under the page
-    // and never receives pointer events itself. Reading threeRef at event time
-    // keeps these valid across prop changes that reuse the renderer.
+    // Bound to window, since the background canvas never gets pointer events.
     const canvasPixels = (e: PointerEvent, el: HTMLCanvasElement) => {
       const rect = el.getBoundingClientRect();
       return {
@@ -582,8 +580,7 @@ const PixelBlast: React.FC<PixelBlastProps> = ({
         composer.addPass(noisePass);
       }
       if (composer) composer.setSize(renderer.domElement.width, renderer.domElement.height);
-      // Handlers live at effect scope so they survive prop changes that do not
-      // reinitialise the renderer.
+      // Handlers live at effect scope so they survive prop changes without a reinit.
       let raf = 0;
       const animate = () => {
         if (autoPauseOffscreen && !visibilityRef.current.visible) {
@@ -654,8 +651,7 @@ const PixelBlast: React.FC<PixelBlastProps> = ({
     }
     prevConfigRef.current = cfg;
     return () => {
-      // Always detach, including on the reinit early-return: these live on
-      // window, outlive the canvas, and every effect run adds a fresh pair.
+      // Always detach, even on the reinit early-return, or window piles up listeners.
       window.removeEventListener('pointerdown', handlePointerDown);
       window.removeEventListener('pointermove', handlePointerMove);
 

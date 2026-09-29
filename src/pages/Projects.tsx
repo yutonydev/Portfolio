@@ -19,7 +19,7 @@ const TILE_HOVER =
 
 type Shot = { src: string; alt: string; caption?: string };
 
-/** Portalled to the body: a transformed ancestor is the containing block for position: fixed. */
+/** Portalled to body, since a transformed ancestor would trap position: fixed. */
 function Lightbox({
   shots,
   index,
@@ -64,8 +64,7 @@ function Lightbox({
       aria-label={shot.alt}
       tabIndex={-1}
       onClick={onClose}
-      // Scrolls rather than shrinking: these are 918px tall, and height-fitting
-      // them caps the width below the 436px they were captured at.
+      // Scrolls instead of height-fitting, which would shrink these 918px captures.
       className="fixed inset-0 z-[100] flex flex-col items-center gap-4 overflow-y-auto bg-black/85 p-[clamp(16px,4vw,48px)] backdrop-blur-sm outline-none"
     >
       <img
@@ -140,15 +139,12 @@ function ScaledEmbed({
   const frame = useRef<HTMLIFrameElement>(null);
   const [fit, setFit] = useState({ scale: 1, offset: 0 });
   const { scale, offset } = fit;
-  // Unmounting the frame is the only cross-origin mute. Without an observer to
-  // wait on, an autoplaying embed starts now: it has no play button to fall back on.
+  // Unmounting is the only cross-origin mute. Autoplay embeds with no observer start now.
   const [running, setRunning] = useState(() => autoPlay && typeof IntersectionObserver === 'undefined');
-  // A cover fades off once it paints; fading the frame itself in would deprioritise
-  // its rendering and delay that paint.
+  // A cover fades off instead of the frame, since fading the frame delays its paint.
   const [loaded, setLoaded] = useState(false);
 
-  // Autoplaying ones still wait for the viewport, so a card further down the
-  // deck does not load its embed while someone is reading the top of the page.
+  // Autoplay still waits for the viewport, so lower cards don't load embeds early.
   useEffect(() => {
     const el = outer.current;
     if (!autoPlay || !el || running) return;
@@ -169,13 +165,11 @@ function ScaledEmbed({
     const el = outer.current;
     if (!el) return;
 
-    // clientWidth, not the rect: the deck's 3D transform shrinks the rect.
-    // Measured up front as well, or it stays unscaled until a resize.
+    // clientWidth, since the deck's 3D transform shrinks the rect; measured once up front.
     const measure = () => {
       const box = el.clientWidth - BOX_BORDER * 2;
       const natural = width + inset * 2;
-      // Never past 1:1. Anything narrower than the card would be magnified into
-      // a soft, oversized version of itself, and grow the box to match.
+      // Never past 1:1, or narrow embeds would be magnified and blurry.
       const next = Math.min(box / natural, 1);
       setFit({ scale: next, offset: Math.max(0, (box - natural * next) / 2) });
     };
@@ -198,8 +192,7 @@ function ScaledEmbed({
         style={{ height: (height + inset * 2) * scale + BOX_BORDER * 2, background: boxColor }}
       >
         {running && (
-          // Holds the box in the embed's own colour until it has painted, then
-          // fades off, so there is no blank flash and nothing pops into place.
+          // Holds the embed's colour until it paints, then fades, so nothing flashes.
           <div
             aria-hidden
             className="pointer-events-none absolute inset-0 z-[1] transition-opacity duration-300"

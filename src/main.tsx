@@ -4,8 +4,7 @@ import { BrowserRouter } from 'react-router-dom';
 import App from './App';
 import './index.css';
 
-// Vercel Web Analytics: the script Vercel serves on the deployed site tracks route changes itself.
-// Loaded directly, since @vercel/analytics won't install alongside react-three's react peer range.
+// Vercel Web Analytics, loaded directly since @vercel/analytics fails to install here.
 if (import.meta.env.PROD) {
   const script = document.createElement('script');
   script.src = '/_vercel/insights/script.js';
