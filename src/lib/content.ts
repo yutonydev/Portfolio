@@ -271,3 +271,18 @@ export const CONTACT = {
   body: 'Got a project, a role, or just want to chat? Drop a note below or reach me directly.',
   errorBody: 'Something went wrong sending that. Try again, or email me directly.',
 };
+
+export const NOT_FOUND = {
+  label: '404',
+  heading: 'Nothing here',
+  body: "That link doesn't go anywhere. Try one of these instead:",
+};
+
+export const PAGE_TITLES: Record<string, string> = {
+  '/': 'Tony Yu | Portfolio',
+  '/projects': 'Projects | Tony Yu',
+  '/about': 'About | Tony Yu',
+  '/contact': 'Contact | Tony Yu',
+};
+
+export const NOT_FOUND_TITLE = 'Page not found | Tony Yu';

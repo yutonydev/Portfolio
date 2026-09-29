@@ -1,4 +1,5 @@
-import { Routes, Route } from 'react-router-dom';
+import { useEffect } from 'react';
+import { Routes, Route, useLocation } from 'react-router-dom';
 import Nav from './components/Nav';
 import Footer from './components/Footer';
 import PixelBlast from './components/PixelBlast/PixelBlast';
@@ -7,9 +8,18 @@ import Home from './pages/Home';
 import Projects from './pages/Projects';
 import About from './pages/About';
 import Contact from './pages/Contact';
+import NotFound from './pages/NotFound';
 import { PIXEL_PURPLE } from './lib/theme';
+import { PAGE_TITLES, NOT_FOUND_TITLE } from './lib/content';
 
 export default function App() {
+  const { pathname } = useLocation();
+
+  useEffect(() => {
+    const path = pathname.replace(/\/+$/, '') || '/';
+    document.title = PAGE_TITLES[path] ?? NOT_FOUND_TITLE;
+  }, [pathname]);
+
   return (
     <div className="relative min-h-screen">
       {/* Fixed background at z-0; content at z-10 stays clickable. */}
@@ -39,6 +49,7 @@ export default function App() {
             <Route path="/projects" element={<Projects />} />
             <Route path="/about" element={<About />} />
             <Route path="/contact" element={<Contact />} />
+            <Route path="*" element={<NotFound />} />
           </Routes>
         </main>
         <Footer />
